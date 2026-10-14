@@ -375,12 +375,16 @@ async function deleteRepair(idx) {
       alert('❌ ลบข้อมูลจากฐานข้อมูลไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อ');
       return;
     }
-    // Realtime listener จะอัปเดต UI อัตโนมัติ
+    repairs.splice(idx, 1);
+    saveRepairs(repairs);
+    renderTable();
+    renderDashboard();
   } else {
     // fallback: ลบ local เท่านั้น
     repairs.splice(idx, 1);
     saveRepairs(repairs);
     renderTable();
+    renderDashboard();
   }
 }
 
@@ -403,6 +407,8 @@ async function saveRepair(e) {
     cost: parseFloat(document.getElementById('formCost').value) || 0
   };
 
+  dataObj.id = dataObj.repairNo;
+
   // ─── บันทึกไป Firebase (source of truth) ───────────────────────────────────
   if (window.isFirebaseReady) {
     const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -416,7 +422,17 @@ async function saveRepair(e) {
       alert('❌ บันทึกไปยังฐานข้อมูลไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อ แล้วลองใหม่อีกครั้ง');
       return; // ไม่ปิด modal เพื่อให้ผู้ใช้ลองใหม่ได้
     }
-    // Realtime listener จะดึงข้อมูลล่าสุดจาก Firebase มาอัปเดต UI อัตโนมัติ
+
+    // สำรองข้อมูลลง LocalStorage ทันที
+    const existingIdx = repairs.findIndex(r => r.repairNo === dataObj.repairNo);
+    if (existingIdx >= 0) {
+      repairs[existingIdx] = dataObj;
+    } else {
+      repairs.unshift(dataObj);
+    }
+    saveRepairs(repairs);
+    renderTable();
+    renderDashboard();
   } else {
     // ไม่มี Firebase → บันทึก local เท่านั้น (fallback)
     if (idx === '') {
@@ -426,6 +442,7 @@ async function saveRepair(e) {
     }
     saveRepairs(repairs);
     renderTable();
+    renderDashboard();
   }
 
   if (dataObj.assignee && dataObj.assignee !== 'ยังไม่ระบุ' && !technicians.includes(dataObj.assignee)) {
