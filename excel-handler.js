@@ -12,19 +12,36 @@ function exportToExcel() {
     return;
   }
 
-  const exportRows = repairs.map(r => ({
-    "เลขที่ใบส่งซ่อม": r.repairNo,
-    "วันที่แจ้ง": r.date,
-    "แผนก/กลุ่มงาน": r.div,
-    "ประเภทครุภัณฑ์": r.category,
-    "รหัสครุภัณฑ์": r.equipCode || '',
-    "ชื่อครุภัณฑ์": r.equipName,
-    "อาการชำรุด": r.symptom,
-    "ผู้ดำเนินการซ่อม": r.assignee || 'ยังไม่ระบุ',
-    "สถานะ": r.status,
-    "ขั้นตอนงานล่าสุด": r.step || '',
-    "ค่าใช้จ่าย (บาท)": Number(r.cost) || 0
-  }));
+  const today = new Date();
+  const exportRows = repairs.map(r => {
+    let durationDays = '';
+    if (r.date) {
+      const reqDate = new Date(r.date);
+      if (r.status === 'เสร็จสิ้น') {
+        const compDate = r.completedDate ? new Date(r.completedDate) : reqDate;
+        durationDays = Math.max(0, Math.round((compDate - reqDate) / (1000 * 60 * 60 * 24)));
+      } else {
+        durationDays = Math.max(0, Math.floor((today - reqDate) / (1000 * 60 * 60 * 24)));
+      }
+    }
+
+    return {
+      "เลขที่ใบส่งซ่อม": r.repairNo,
+      "วันที่แจ้ง": r.date,
+      "วันที่ซ่อมเสร็จ": r.completedDate || '',
+      "ระยะเวลา (วัน)": durationDays,
+      "แผนก/กลุ่มงาน": r.div,
+      "ผู้ส่งซ่อม": r.requester || 'ไม่ระบุ',
+      "ประเภทครุภัณฑ์": r.category,
+      "รหัสครุภัณฑ์": r.equipCode || '',
+      "ชื่อครุภัณฑ์": r.equipName,
+      "อาการชำรุด": r.symptom,
+      "ผู้ดำเนินการซ่อม": r.assignee || 'ยังไม่ระบุ',
+      "สถานะ": r.status,
+      "ขั้นตอนงานล่าสุด": r.step || '',
+      "ค่าใช้จ่าย (บาท)": Number(r.cost) || 0
+    };
+  });
 
   const worksheet = XLSX.utils.json_to_sheet(exportRows);
   const workbook = XLSX.utils.book_new();

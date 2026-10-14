@@ -17,13 +17,51 @@ function renderDashboard() {
   
   // 1. คำนวณ KPI
   const totalRepairs = repairs.length;
-  const completed = repairs.filter(r => r.status === 'เสร็จสิ้น').length;
-  const pending = repairs.filter(r => ['กำลังดำเนินการ', 'รอดำเนินการ', 'รออะไหล่/ช่างภายนอก'].includes(r.status)).length;
+  const completedList = repairs.filter(r => r.status === 'เสร็จสิ้น');
+  const completed = completedList.length;
+  const pendingList = repairs.filter(r => ['กำลังดำเนินการ', 'รอดำเนินการ', 'รออะไหล่/ช่างภายนอก'].includes(r.status));
+  const pending = pendingList.length;
   const totalCost = repairs.reduce((sum, r) => sum + (Number(r.cost) || 0), 0);
+
+  // คำนวณระยะเวลาซ่อมเฉลี่ย (วัน) สำหรับรายการที่เสร็จสิ้น
+  let totalRepairDays = 0;
+  let countWithDuration = 0;
+  completedList.forEach(r => {
+    if (r.date) {
+      const startDate = new Date(r.date);
+      const endDate = r.completedDate ? new Date(r.completedDate) : new Date(r.date);
+      const diffTime = Math.max(0, endDate - startDate);
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+      totalRepairDays += diffDays;
+      countWithDuration++;
+    }
+  });
+  const avgRepairDays = countWithDuration > 0 ? (totalRepairDays / countWithDuration).toFixed(1) : 0;
+
+  // ตรวจสอบงานที่ค้างซ่อมเกิน 7 วัน
+  const now = new Date();
+  const overdueCount = pendingList.filter(r => {
+    if (!r.date) return false;
+    const reqDate = new Date(r.date);
+    const diffDays = Math.floor((now - reqDate) / (1000 * 60 * 60 * 24));
+    return diffDays > 7;
+  }).length;
 
   document.getElementById('kpi-total-repairs').innerText = `${totalRepairs.toLocaleString()} ครั้ง`;
   document.getElementById('kpi-repair-status-sub').innerText = `เสร็จสิ้น ${completed} | กำลังซ่อม ${pending}`;
   document.getElementById('kpi-total-cost').innerText = `${totalCost.toLocaleString()} บาท`;
+
+  const avgTimeEl = document.getElementById('kpi-avg-repair-time');
+  if (avgTimeEl) avgTimeEl.innerText = `${avgRepairDays} วัน`;
+
+  const slaSubEl = document.getElementById('kpi-sla-rate-sub');
+  if (slaSubEl) {
+    if (overdueCount > 0) {
+      slaSubEl.innerHTML = `<span class="text-rose-200 font-bold">⚠️ ค้างเกิน 7 วัน: ${overdueCount} งาน</span>`;
+    } else {
+      slaSubEl.innerText = `งานค้างเกิน 7 วัน: 0 งาน 👍`;
+    }
+  }
 
   // 2. จัดกลุ่มสรุป แผนก & ครุภัณฑ์
   const deptMap = {};
