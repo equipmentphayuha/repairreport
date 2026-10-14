@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบซ่อมแซมครุภัณฑ์ - โรงพยาบาลพยุหะคีรี</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+  
+  <!-- Firebase SDK -->
+  
+
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+  <!-- Header -->
+  <header class="bg-teal-700 text-white shadow-md sticky top-0 z-30 no-print">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
+      <div class="flex items-center space-x-3">
+        <span class="text-2xl">🏥</span>
+        <div>
+          <h1 class="text-lg font-bold leading-tight">ระบบบริหารงานซ่อมแซมครุภัณฑ์และเครื่องมือแพทย์</h1>
+          <p class="text-xs text-teal-100">โรงพยาบาลพยุหะคีรี จ.นครสวรรค์</p>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="switchTab('charts')" id="btn-tab-charts" class="px-4 py-1.5 rounded-lg text-sm font-medium bg-teal-900 shadow transition-colors">ภาพรวมสถิติ (กราฟ)</button>
+        <button onclick="switchTab('tables')" id="btn-tab-tables" class="px-4 py-1.5 rounded-lg text-sm font-medium bg-teal-600 hover:bg-teal-800 transition-colors">รายละเอียดแผนก/ครุภัณฑ์</button>
+        <button onclick="switchTab('repairs')" id="btn-tab-repairs" class="px-4 py-1.5 rounded-lg text-sm font-medium bg-teal-600 hover:bg-teal-800 transition-colors">รายการใบส่งซ่อม</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
+
+    <!-- ================= แท็บ 1: แดชบอร์ด ================= -->
+    <section id="section-charts" class="space-y-6">
+      
+      <!-- Filter Bar -->
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-700">ภาพรวมสถิติและค่าใช้จ่ายในการซ่อมแซม</h2>
+          <p class="text-xs text-slate-500">เลือกช่วงเวลางบประมาณ และส่งออกเป็นเอกสารนำเสนอ</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-2 mr-2">
+            <label class="text-sm font-medium text-slate-600">มุมมอง:</label>
+            <select id="dashboardPeriod" onchange="renderDashboard()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-slate-50 focus:outline-teal-600">
+              <option value="monthly">รายเดือน (Monthly)</option>
+              <option value="quarterly">ราย 3 เดือน (Quarterly)</option>
+              <option value="yearly">รายปี (Yearly)</option>
+            </select>
+          </div>
+          
+          <button onclick="exportDashboardToPPT()" class="bg-orange-600 hover:bg-orange-700 text-white px-3.5 py-1.5 rounded-lg text-sm font-medium shadow flex items-center gap-1.5 transition">
+            <span>📽️</span> Export สไลด์ PowerPoint (.pptx)
+          </button>
+
+          <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-lg text-sm font-medium shadow flex items-center gap-1.5 transition no-print">
+            <span>🖨️</span> พิมพ์ / บันทึก PDF
+          </button>
+        </div>
+      </div>
+
+            <!-- KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <!-- Card 1 -->
+        <div class="relative overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 p-5 rounded-2xl shadow-lg text-white">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-sm text-indigo-100 font-medium">รายการส่งซ่อมทั้งหมด</p>
+              <p id="kpi-total-repairs" class="text-3xl font-bold mt-1">0 ครั้ง</p>
+            </div>
+            <div class="bg-white/20 p-2.5 rounded-xl">
+              <span class="text-2xl">📋</span>
+            </div>
+          </div>
+          <div class="mt-4 text-xs bg-white/10 inline-block px-2.5 py-1 rounded-lg backdrop-blur-sm" id="kpi-repair-status-sub">
+            เสร็จสิ้น 0 | กำลังซ่อม 0
+          </div>
+          <div class="absolute -bottom-4 -right-4 opacity-10 text-8xl">⚙️</div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="relative overflow-hidden bg-gradient-to-br from-emerald-400 to-emerald-600 p-5 rounded-2xl shadow-lg text-white">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-sm text-emerald-100 font-medium">ค่าใช้จ่ายสะสมรวม</p>
+              <p id="kpi-total-cost" class="text-3xl font-bold mt-1">0 บาท</p>
+            </div>
+            <div class="bg-white/20 p-2.5 rounded-xl">
+              <span class="text-2xl">💰</span>
+            </div>
+          </div>
+          <div class="mt-4 text-xs bg-white/10 inline-block px-2.5 py-1 rounded-lg backdrop-blur-sm">
+            งบประมาณซ่อมบำรุงสะสม
+          </div>
+          <div class="absolute -bottom-4 -right-4 opacity-10 text-8xl">฿</div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="relative overflow-hidden bg-gradient-to-br from-amber-400 to-orange-500 p-5 rounded-2xl shadow-lg text-white">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-sm text-amber-100 font-medium">แผนกส่งซ่อมสูงสุด</p>
+              <p id="kpi-top-dept" class="text-xl font-bold mt-1 truncate max-w-[140px]">-</p>
+            </div>
+            <div class="bg-white/20 p-2.5 rounded-xl">
+              <span class="text-2xl">🏥</span>
+            </div>
+          </div>
+          <div class="mt-4 text-xs bg-white/10 inline-block px-2.5 py-1 rounded-lg backdrop-blur-sm" id="kpi-top-dept-sub">
+            0 ครั้ง (0 บาท)
+          </div>
+          <div class="absolute -bottom-4 -right-4 opacity-10 text-8xl">🏆</div>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="relative overflow-hidden bg-gradient-to-br from-sky-400 to-blue-600 p-5 rounded-2xl shadow-lg text-white">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-sm text-sky-100 font-medium">ครุภัณฑ์ใช้งบสูงสุด</p>
+              <p id="kpi-top-equip" class="text-xl font-bold mt-1 truncate max-w-[140px]">-</p>
+            </div>
+            <div class="bg-white/20 p-2.5 rounded-xl">
+              <span class="text-2xl">🔧</span>
+            </div>
+          </div>
+          <div class="mt-4 text-xs bg-white/10 inline-block px-2.5 py-1 rounded-lg backdrop-blur-sm" id="kpi-top-equip-sub">
+            งบซ่อม 0 บาท
+          </div>
+          <div class="absolute -bottom-4 -right-4 opacity-10 text-8xl">📈</div>
+        </div>
+      </div>
+
+            <!-- Charts -->
+      <div class="grid grid-cols-1 gap-6">
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+          <h3 class="text-sm font-bold text-slate-700 mb-3">เปรียบเทียบจำนวนครั้งและงบประมาณซ่อมตามช่วงเวลา</h3>
+          <div class="relative h-72">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+            <h3 class="text-sm font-bold text-slate-700 mb-3">สัดส่วนค่าใช้จ่ายตามประเภทครุภัณฑ์</h3>
+            <div class="relative h-72 w-full">
+              <canvas id="categoryChart"></canvas>
+            </div>
+          </div>
+          
+          <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+            <h3 class="text-sm font-bold text-slate-700 mb-3">จำนวนครั้งส่งซ่อมแยกตามแผนก/กลุ่มงาน (Top 10)</h3>
+            <div class="relative h-72 w-full">
+              <canvas id="deptChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= แท็บ 2: สรุปรายละเอียด ================= -->
+    <section id="section-tables" class="space-y-6 hidden">
+      <!-- Export Bar for Tables -->
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 class="text-base font-bold text-slate-700">รายละเอียดตารางสรุป</h2>
+          <p class="text-xs text-slate-500">ข้อมูลค่าใช้จ่ายและความถี่แยกตามแผนกและครุภัณฑ์</p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-lg text-sm font-medium shadow flex items-center gap-1.5 transition no-print">
+            <span>🖨️</span> พิมพ์รายงาน
+          </button>
+        </div>
+      </div>
+      <!-- Breakdown Tables -->
+      <div class="grid grid-cols-1 gap-8">
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+          <div>
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3 border-b pb-2">
+              <div>
+                <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                  <span>🏢</span> สรุปแยกตามกลุ่มงาน / แผนก
+                </h3>
+                <p class="text-xs text-slate-500">เรียงตามแผนกที่ส่งซ่อมบ่อยที่สุด</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <input type="text" id="deptSearchInput" oninput="renderDashboardTables()" placeholder="ค้นแผนก..." class="border border-slate-200 rounded px-2 py-1 text-xs w-28 focus:outline-teal-600">
+                <span class="text-xs font-semibold px-2 py-0.5 bg-teal-100 text-teal-800 rounded-full" id="dept-summary-count">0 แผนก</span>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto max-h-80 overflow-y-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-100 text-slate-600 uppercase sticky top-0">
+                  <tr>
+                    <th class="py-2.5 px-3">อันดับ</th>
+                    <th class="py-2.5 px-3">กลุ่มงาน / แผนก</th>
+                    <th class="py-2.5 px-3 text-center">จำนวนครั้ง</th>
+                    <th class="py-2.5 px-3 text-right">ค่าใช้จ่ายรวม</th>
+                    <th class="py-2.5 px-3 text-right">สัดส่วน</th>
+                  </tr>
+                </thead>
+                <tbody id="deptSummaryTableBody" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+          <div>
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3 border-b pb-2">
+              <div>
+                <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                  <span>🩺</span> สรุปแยกตามรายการครุภัณฑ์ / เครื่องมือ
+                </h3>
+                <p class="text-xs text-slate-500">ความถี่ในการซ่อม แผนกที่ใช้ และงบประมาณ</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <input type="text" id="equipSearchInput" oninput="resetEquipPageAndRender()" placeholder="ค้นชื่อครุภัณฑ์..." class="border border-slate-200 rounded px-2 py-1 text-xs w-32 focus:outline-purple-600">
+                <span class="text-xs font-semibold px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full" id="equip-summary-count">0 รายการ</span>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto min-h-[18rem] max-h-80 overflow-y-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-100 text-slate-600 uppercase sticky top-0">
+                  <tr>
+                    <th class="py-2.5 px-3">ชื่อครุภัณฑ์</th>
+                    <th class="py-2.5 px-3">แผนกที่พบ</th>
+                    <th class="py-2.5 px-3 text-center">จำนวนซ่อม</th>
+                    <th class="py-2.5 px-3 text-right">งบประมาณรวม</th>
+                    <th class="py-2.5 px-3 text-right">เฉลี่ย/ครั้ง</th>
+                  </tr>
+                </thead>
+                <tbody id="equipSummaryTableBody" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-3 border-t mt-2 text-xs text-slate-500">
+            <div class="flex items-center gap-1">
+              <span>แสดง:</span>
+              <select id="equipPageSize" onchange="resetEquipPageAndRender()" class="border border-slate-200 rounded px-1.5 py-0.5 bg-slate-50">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+              </select>
+              <span>รายการ/หน้า</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <span id="equipPaginationInfo" class="mr-2">1-10 จาก 100</span>
+              <button onclick="changeEquipPage(-1)" id="btnEquipPrev" class="px-2 py-1 border rounded bg-slate-50 hover:bg-slate-100 disabled:opacity-40">◀ ก่อนหน้า</button>
+              <button onclick="changeEquipPage(1)" id="btnEquipNext" class="px-2 py-1 border rounded bg-slate-50 hover:bg-slate-100 disabled:opacity-40">ถัดไป ▶</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ================= แท็บ 2: จัดการใบส่งซ่อม ================= -->
+    <section id="section-repairs" class="space-y-6 hidden">
+      
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="openModal()" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow flex items-center gap-1.5 transition">
+            <span>+</span> เปิดใบส่งซ่อมใหม่
+          </button>
+          
+          <label class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-3 py-2 rounded-lg text-sm font-medium cursor-pointer flex items-center gap-1.5 transition" title="นำเข้าประวัติงานส่งซ่อม">
+            <span>📥</span> Import งานซ่อม Excel
+            <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleExcelImport(event)">
+          </label>
+
+          <label class="bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 px-3 py-2 rounded-lg text-sm font-medium cursor-pointer flex items-center gap-1.5 transition" title="นำเข้าไฟล์รายการครุภัณฑ์">
+            <span>📦</span> Import ครุภัณฑ์ Excel
+            <input type="file" id="equipExcelInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleEquipmentExcelImport(event)">
+          </label>
+
+          <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-lg text-sm font-medium shadow flex items-center gap-1.5 transition">
+            <span>📊</span> Export รายงาน Excel
+          </button>
+
+          <button onclick="manualSyncFromCloud()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-lg text-sm font-medium shadow flex items-center gap-1.5 transition">
+            <span>🔄</span> ดึงข้อมูลล่าสุดจาก Cloud
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <input type="text" id="searchInput" oninput="resetRepairPageAndRender()" placeholder="ค้นหาเลขที่ เช่น 1/2570, แผนก, ครุภัณฑ์, ช่าง..." class="w-full sm:w-72 border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-teal-600">
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col justify-between">
+        <div class="overflow-x-auto min-h-[20rem]">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-100 text-slate-600 uppercase text-xs border-b">
+              <tr>
+                <th class="py-3 px-4">เลขที่ใบส่งซ่อม</th>
+                <th class="py-3 px-4">วันที่แจ้ง</th>
+                <th class="py-3 px-4">แผนก/ตึก</th>
+                <th class="py-3 px-4">รายการครุภัณฑ์</th>
+                <th class="py-3 px-4">อาการเสีย</th>
+                <th class="py-3 px-4">ผู้ดำเนินการซ่อม</th>
+                <th class="py-3 px-4">สถานะ & ขั้นตอน</th>
+                <th class="py-3 px-4 text-right">ค่าใช้จ่าย (บาท)</th>
+                <th class="py-3 px-4 text-center">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="repairTableBody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+
+        <div class="p-3 bg-slate-50 border-t flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600">
+          <div class="flex items-center gap-2">
+            <span>แสดงแถวต่อหน้า:</span>
+            <select id="repairPageSize" onchange="resetRepairPageAndRender()" class="border border-slate-300 rounded px-2 py-1 bg-white">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="repairPaginationInfo">1-10 จาก 100</span>
+            <button onclick="changeRepairPage(-1)" id="btnRepairPrev" class="px-3 py-1 border rounded bg-white hover:bg-slate-100 disabled:opacity-40">◀ ก่อนหน้า</button>
+            <button onclick="changeRepairPage(1)" id="btnRepairNext" class="px-3 py-1 border rounded bg-white hover:bg-slate-100 disabled:opacity-40">ถัดไป ▶</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <datalist id="equipmentsDatalist"></datalist>
+  <datalist id="divDatalist"></datalist>
+
+  <!-- ================= Modal: แบบฟอร์มเพิ่ม/แก้ไขใบส่งซ่อม ================= -->
+  <div id="repairModal" class="fixed inset-0 bg-slate-900 bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden modal-enter">
+      <div class="bg-teal-700 px-6 py-4 text-white flex justify-between items-center">
+        <h3 id="modalTitle" class="font-bold text-base">บันทึกข้อมูลใบส่งซ่อม</h3>
+        <button onclick="closeModal()" class="text-teal-200 hover:text-white text-xl font-bold">&times;</button>
+      </div>
+      <form id="repairForm" onsubmit="saveRepair(event)" class="p-6 space-y-4">
+        <input type="hidden" id="editIndex">
+
+        <!-- เลขที่ใบซ่อม (รูปแบบ ลำดับ/ปีงบประมาณ เช่น 1/2570) -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="block text-xs font-semibold text-slate-600">เลขที่ใบส่งซ่อม *</label>
+              <span class="text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.2 rounded font-medium">ลำดับ/ปีงบ</span>
+            </div>
+            <input type="text" id="formRepairNo" required placeholder="เช่น 1/2570" class="w-full border rounded-lg p-2 text-sm bg-slate-50 font-bold text-teal-800 text-base focus:outline-teal-600">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">วันที่แจ้ง *</label>
+            <input type="date" id="formDate" required class="w-full border rounded-lg p-2 text-sm focus:outline-teal-600">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">แผนก / กลุ่มงาน *</label>
+            <input type="text" id="formDept" list="divDatalist" required placeholder="เช่น ER, OPD, ตึกผู้ป่วยใน" class="w-full border rounded-lg p-2 text-sm focus:outline-teal-600">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">ประเภทครุภัณฑ์ *</label>
+            <select id="formCategory" class="w-full border rounded-lg p-2 text-sm focus:outline-teal-600">
+              <option value="เครื่องมือแพทย์">เครื่องมือแพทย์</option>
+              <option value="ระบบคอมพิวเตอร์/เครือข่าย">ระบบคอมพิวเตอร์/เครือข่าย</option>
+              <option value="ระบบสาธารณูปโภค">ระบบสาธารณูปโภค</option>
+              <option value="ครุภัณฑ์สำนักงานทั่วไป">ครุภัณฑ์สำนักงานทั่วไป</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อเครื่องมือ/ครุภัณฑ์ *</label>
+            <input type="text" id="formEquipName" list="equipmentsDatalist" oninput="onEquipNameChange(event)" required placeholder="พิมพ์ค้นหาหรือระบุชื่อเครื่องมือ..." class="w-full border rounded-lg p-2 text-sm focus:outline-teal-600">
+          </div>
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="block text-xs font-semibold text-slate-600">รหัส/หมายเลขครุภัณฑ์</label>
+              <button type="button" onclick="onGenerateEquipCodeClick()" class="text-[11px] text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2 py-0.5 rounded font-medium transition flex items-center gap-1">
+                <span>⚡</span> สร้างรหัสอัตโนมัติ
+              </button>
+            </div>
+            <input type="text" id="formEquipCode" placeholder="เช่น 6510-001-0005" class="w-full border rounded-lg p-2 text-sm font-mono focus:outline-teal-600">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">อาการชำรุด / ปัญหาที่พบ *</label>
+          <textarea id="formSymptom" rows="2" required placeholder="ระบุอาการชำรุดโดยละเอียด" class="w-full border rounded-lg p-2 text-sm focus:outline-teal-600"></textarea>
+        </div>
+
+        <!-- ผู้ดำเนินการซ่อม พร้อมปุ่มเพิ่มช่าง และปุ่มคลิกเลือกชื่อช่างทันที -->
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-semibold text-slate-700">ผู้ได้รับมอบหมายดำเนินการซ่อม 👷</label>
+            <button type="button" onclick="addNewTechnician()" class="text-[11px] bg-teal-600 hover:bg-teal-700 text-white px-2 py-0.5 rounded font-medium transition flex items-center gap-1 shadow-sm">
+              <span>+</span> เพิ่มชื่อช่างซ่อม
+            </button>
+          </div>
+          
+          <input type="text" id="formAssignee" placeholder="คลิกเลือกชื่อด้านล่าง หรือพิมพ์ระบุเอง..." class="w-full border rounded-lg p-2 text-sm bg-white focus:outline-teal-600 font-medium text-slate-800">
+          
+          <!-- รายชื่อช่างซ่อมแบบคลิกเพื่อเลือกทันที -->
+          <div>
+            <p class="text-[11px] text-slate-500 mb-1">กดที่ชื่อเพื่อเลือกทันที:</p>
+            <div id="technicianBadges" class="flex flex-wrap gap-1.5">
+              <!-- เรนเดอร์ปุ่มช่างผ่าน JS -->
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">สถานะงาน *</label>
+            <select id="formStatus" class="w-full border rounded-lg p-2 text-sm focus:outline-teal-600">
+              <option value="รอดำเนินการ">รอดำเนินการ</option>
+              <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
+              <option value="รออะไหล่/ช่างภายนอก">รออะไหล่/ช่างภายนอก</option>
+              <option value="เสร็จสิ้น">เสร็จสิ้น</option>
+              <option value="จำหน่ายออก">จำหน่ายออก (ซ่อมไม่คุ้ม)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">ค่าใช้จ่ายรวม (บาท)</label>
+            <input type="number" id="formCost" min="0" step="0.01" value="0" class="w-full border rounded-lg p-2 text-sm focus:outline-teal-600">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">ขั้นตอนงานล่าสุด</label>
+          <input type="text" id="formStep" placeholder="เช่น สั่งอะไหล่จากบริษัท, ซ่อมเสร็จรอส่งมอบ" class="w-full border rounded-lg p-2 text-sm focus:outline-teal-600">
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-lg text-sm text-slate-600 hover:bg-slate-100 transition">ยกเลิก</button>
+          <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium transition">บันทึกข้อมูล</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="storage.js"></script>
+  <script src="excel-handler.js"></script>
+  <script src="dashboard.js"></script>
+  <script type="module" src="firebase-config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
