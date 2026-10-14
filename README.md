@@ -3,63 +3,60 @@
 
 ---
 
-## 📌 ภาพรวมสถาปัตยกรรมระบบ (Architecture Overview)
-ระบบนี้ทำงานในรูปแบบ Single Page Application (SPA) แบบ Offline-First ผสานการซิงค์ข้อมูลกึ่งเรียลไทม์ผ่าน Firebase Cloud Firestore โดยเชื่อมโยง 2 ระบบหลักเข้าด้วยกัน:
-1. **ระบบบริหารจัดการงานซ่อมแซมและบำรุงรักษาครุภัณฑ์** (Work Orders & Maintenance)
-2. **ระบบทะเบียนพัสดุและคำนวณค่าเสื่อมราคาสินทรัพย์** (Equipment Registry & Depreciation Tracking)
-
----
-
-## 📂 โครงสร้างไฟล์และโมดูล (Directory & File Structure)
+## 📌 สถาปัตยกรรมระบบใหม่ (Clean Modular Architecture - v2.0)
+ระบบได้รับการจัดระเบียบโครงสร้างใหม่ทั้งหมด (Refactored to Clean Architecture) แยกโมดูลตามหน้าที่ความรับผิดชอบอย่างชัดเจน (Separation of Concerns) และใช้ **Single Source of Truth** สำหรับการเชื่อมต่อ Firebase และการตั้งค่าระบบ:
 
 ```
 d:\โบ้\ใบส่งซ่อม\
-├── index.html               # หน้าหลักรวม UI ทุกโมดูล, Navbar แบบ Single-row, Modals
-├── style.css                # CSS ตกแต่งเสริม, Responsive utilities, Print Stylesheet
+├── index.html                   # ไฟล์หลักหน้าเว็บ รวม UI ทุกแท็บและโมดอล
+├── style.css                    # CSS สไตล์ส่วนกลาง, Responsive Utilities, Print Stylesheet
+├── README.md                    # เอกสารคู่มือระบบ
 │
-├── 🛠️ โมดูลงานซ่อมบำรุง (Maintenance System):
-│   ├── app.js               # Logic หลักของงานซ่อม, การเปิดฟอร์ม, จัดการสถานะ, ตัวเชื่อมข้ามระบบ
-│   ├── storage.js           # จัดการ LocalStorage สำหรับงานซ่อมและครุภัณฑ์พื้นฐาน
-│   ├── firebase-config.js   # เชื่อมต่อ Cloud Firestore สำหรับใบส่งซ่อม (Collection: repairs)
-│   ├── dashboard.js         # แดชบอร์ดสถิติงานซ่อม, กราฟ Chart.js, KPI ค่าใช้จ่ายและ SLA
-│   ├── staff.js             # บริหารจัดการรายชื่อช่างซ่อมและผู้ส่งซ่อม (Collection: staff)
-│   └── excel-handler.js     # ส่งออกข้อมูล Excel และสรุปรายงานนำเสนอ PowerPoint
+├── js/                          # 📁 โฟลเดอร์ซอร์สโค้ดหลักของระบบ
+│   ├── common/                  # 🌐 ส่วนกลางที่ทุกโมดูลแชร์ร่วมกัน (Shared Services)
+│   │   ├── config.js            # กำหนดค่า Firebase, ค่าเริ่มต้นฟิลด์ครุภัณฑ์, อัตราอายุใช้งานค่าเสื่อมราคา
+│   │   ├── firebase.js          # Unified Firestore เชื่อมต่อฐานข้อมูลตัวเดียว จัดการ Realtime และ Multi-tab Cache
+│   │   └── utils.js             # ยูทิลิตี้แปลงวันที่ พ.ศ./ค.ศ., จัดรูปแบบตัวเลข/เงิน, สูตรคำนวณค่าเสื่อมราคา
+│   │
+│   ├── repair/                  # 🛠️ กลุ่มงานบริหารจัดการซ่อมบำรุง (Maintenance Module)
+│   │   ├── repair-core.js       # ตัวควบคุมหลักงานซ่อม, ตารางรายการ, ฟอร์มบันทึก, ตัวเชื่อมข้ามระบบ
+│   │   ├── repair-dashboard.js  # แดชบอร์ดสถิติซ่อม, กราฟ Chart.js, KPI ค่าใช้จ่าย, SLA
+│   │   ├── repair-staff.js      # จัดการรายชื่อช่างซ่อมและผู้ส่งซ่อม (Staff Management)
+│   │   ├── repair-storage.js    # จัดการ LocalStorage และแคชข้อมูลงานซ่อม
+│   │   └── repair-excel.js      # ส่งออก Excel และรายงานนำเสนอ PowerPoint
+│   │
+│   └── parcel/                  # 📦 กลุ่มทะเบียนพัสดุและค่าเสื่อมราคา (Equipment & Depreciation Module)
+│       ├── parcel-core.js       # ฟอร์มลงทะเบียนพัสดุ, ตารางข้อมูล, การ์ดมือถือ, แดชบอร์ดและกราฟครุภัณฑ์
+│       └── parcel-excel.js      # ระบบนำเข้า (Smart Import) และส่งออก Excel ทะเบียนพัสดุ
 │
-├── 📦 โมดูลทะเบียนพัสดุและค่าเสื่อมราคา (Equipment & Depreciation System):
-│   ├── parcel_js/
-│   │   ├── app.js           # Logic หลักทะเบียนพัสดุ, Data Views (ตาราง/การ์ดมือถือ), กราฟ Chart.js
-│   │   ├── config.js        # กำหนดฟิลด์ข้อมูล, เกณฑ์อายุใช้งาน, สูตรคำนวณค่าเสื่อมราคา (Straight-Line)
-│   │   ├── importExport.js  # นำเข้า/ส่งออก Excel ทะเบียนพัสดุแบบ Dynamic Schema
-│   │   └── utils.js         # ฟังก์ชันแปลงวันที่ พ.ศ./ค.ศ. และแยกช่วงเลขครุภัณฑ์ (Noid Range)
-│
-└── 🗄️ _archive_scripts/     # สคริปต์ไมเกรชันและ Utility สำหรับการพัฒนา (ย้ายแยกออกไม่ให้รก)
+├── _legacy_backup/              # 🗄️ ไฟล์สำรองเดิมก่อนจัดระเบียบโครงสร้าง
+└── _archive_scripts/            # 🗄️ สคริปต์สำหรับการพัฒนา/ไมเกรชันข้อมูลเดิม
 ```
 
 ---
 
-## 🔗 จุดเชื่อมโยงระหว่างระบบ (Cross-System Integrations)
+## 🔗 จุดเชื่อมโยงระหว่างระบบ (Cross-System Workflow)
 
-1. **ส่งซ่อมจากทะเบียนพัสดุ (One-Click Repair Entry):**
-   - ฟังก์ชัน: `window.createRepairFromParcelItem(id)` ใน [parcel_js/app.js](file:///d:/%E0%B9%82%E0%B8%9A%E0%B9%89/%E0%B9%83%E0%B8%9A%E0%B8%AA%E0%B9%88%E0%B8%87%E0%B8%8B%E0%B9%88%E0%B8%AD%E0%B8%A1/parcel_js/app.js)
-   - ฟังก์ชันรับข้อมูล: `window.fillRepairFormFromParcel(item)` ใน [app.js](file:///d:/%E0%B9%82%E0%B8%9A%E0%B9%89/%E0%B9%83%E0%B8%9A%E0%B8%AA%E0%B9%88%E0%B8%87%E0%B8%8B%E0%B9%88%E0%B8%AD%E0%B8%A1/app.js)
-   - ส่งต่อ: เลขครุภัณฑ์ (`noid`), ชื่อเครื่อง (`name`), แผนก (`div`), ประเภท (`type`)
+1. **ส่งซ่อมจากทะเบียนพัสดุในคลิกเดียว (One-Click Repair):**
+   - ปุ่ม `🔧 ส่งซ่อมเครื่องนี้` ในตารางพัสดุ, การ์ดมือถือ, และฟอร์มพัสดุจะเรียกฟังก์ชัน `window.createRepairFromParcelItem(id)`
+   - ส่งต่อข้อมูลไปยัง `window.fillRepairFormFromParcel(item)` ใน [js/repair/repair-core.js](file:///d:/%E0%B9%82%E0%B8%9A%E0%B9%89/%E0%B9%83%E0%B8%9A%E0%B8%AA%E0%B9%88%E0%B8%87%E0%B8%8B%E0%B9%88%E0%B8%AD%E0%B8%A1/js/repair/repair-core.js) สลับไปแท็บส่งซ่อมและกรอกชื่อ, Noid, แผนก, ประเภทให้อัตโนมัติ
 
-2. **สูตรคำนวณค่าเสื่อมราคา (Straight-Line Method):**
-   - ฟังก์ชัน: `calculateDepreciation(item)` ใน [parcel_js/config.js](file:///d:/%E0%B9%82%E0%B8%9A%E0%B9%89/%E0%B9%83%E0%B8%9A%E0%B8%AA%E0%B9%88%E0%B8%87%E0%B8%8B%E0%B9%88%E0%B8%AD%E0%B8%A1/parcel_js/config.js)
-   - เกณฑ์: กรมบัญชีกลาง มูลค่าซากคงเหลือ 1 บาท เมื่อครบกำหนดอายุใช้งาน
+2. **ระบบคำนวณค่าเสื่อมราคา (Straight-Line Depreciation):**
+   - สูตรคำนวณส่วนกลางใน [js/common/utils.js](file:///d:/%E0%B9%82%E0%B8%9A%E0%B9%89/%E0%B9%83%E0%B8%9A%E0%B8%AA%E0%B9%88%E0%B8%87%E0%B8%8B%E0%B9%88%E0%B8%AD%E0%B8%A1/js/common/utils.js) ฟังก์ชัน `calculateDepreciation(item)`
+   - อิงเกณฑ์กรมบัญชีกลาง คิดมูลค่าซากคงเหลือ 1 บาท เมื่อครบอายุใช้งานตามประเภท
 
-3. **Cloud Firestore Collections:**
-   - `repairs` : บันทึกประวัติใบส่งซ่อม
-   - `staff` : บันทึกบุคลากรช่างซ่อมและผู้ส่งซ่อม
-   - `hospital_equipments` : บันทึกทะเบียนครุภัณฑ์
-   - `settings/field_configurations` : โครงสร้างฟิลด์ข้อมูลครุภัณฑ์ที่กำหนดเอง
+3. **ฐานข้อมูล Cloud Firestore เดียวกัน:**
+   - Collection `repairs`: บันทึกใบส่งซ่อม
+   - Collection `staff`: บันทึกช่างซ่อมและผู้ส่งซ่อม
+   - Collection `hospital_equipments`: บันทึกทะเบียนครุภัณฑ์
+   - Collection `settings/field_configurations`: โครงสร้างฟิลด์ครุภัณฑ์ที่กำหนดเอง
 
 ---
 
-## 💡 แนวทางการบำรุงรักษาและการแก้ไขในอนาคต (Maintenance Guide)
+## 🚀 แนวทางการดูแลรักษาและการแก้ไขในอนาคต (Future Maintenance)
 
-- **การเพิ่ม/แก้ฟิลด์ครุภัณฑ์:** จัดการผ่านปุ่ม "⚙️ ตั้งค่าฟิลด์" ในหน้าเว็บได้ทันที หรือแก้ไขที่ `defaultFields` ใน `parcel_js/config.js`
-- **การปรับเปลี่ยนอัตราค่าเสื่อมราคา:** แก้ไข `defaultUsefulLifeYears` ใน `parcel_js/config.js`
-- **การเพิ่มกราฟหรือ Dashboard:**
-  - แดชบอร์ดงานซ่อม: เพิ่มใน `dashboard.js`
-  - แดชบอร์ดพัสดุ: เพิ่มในฟังก์ชัน `renderParcelCharts()` ใน `parcel_js/app.js`
+- **ปรับแก้เกณฑ์ค่าเสื่อมราคา / อายุใช้งาน:** แก้ไขที่ [js/common/config.js](file:///d:/%E0%B9%82%E0%B8%9A%E0%B9%89/%E0%B9%83%E0%B8%9A%E0%B8%AA%E0%B9%88%E0%B8%87%E0%B8%8B%E0%B9%88%E0%B8%AD%E0%B8%A1/js/common/config.js) ใน `defaultUsefulLifeYears`
+- **ปรับแต่งการเชื่อมต่อ Cloud / Firebase:** แก้ไขที่ [js/common/firebase.js](file:///d:/%E0%B9%82%E0%B8%9A%E0%B9%89/%E0%B9%83%E0%B8%9A%E0%B8%AA%E0%B9%88%E0%B8%87%E0%B8%8B%E0%B9%88%E0%B8%AD%E0%B8%A1/js/common/firebase.js)
+- **ปรับแต่งแดชบอร์ดและกราฟ:**
+  - แดชบอร์ดงานซ่อมบำรุง: [js/repair/repair-dashboard.js](file:///d:/%E0%B9%82%E0%B8%9A%E0%B9%89/%E0%B9%83%E0%B8%9A%E0%B8%AA%E0%B9%88%E0%B8%87%E0%B8%8B%E0%B9%88%E0%B8%AD%E0%B8%A1/js/repair/repair-dashboard.js)
+  - แดชบอร์ดทะเบียนพัสดุ: [js/parcel/parcel-core.js](file:///d:/%E0%B9%82%E0%B8%9A%E0%B9%89/%E0%B9%83%E0%B8%9A%E0%B8%AA%E0%B9%88%E0%B8%87%E0%B8%8B%E0%B9%88%E0%B8%AD%E0%B8%A1/js/parcel/parcel-core.js) (ฟังก์ชัน `renderParcelCharts`)

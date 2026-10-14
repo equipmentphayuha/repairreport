@@ -1218,12 +1218,13 @@
   <!-- โซนที่จะถูกพิมพ์เมื่อสั่ง Print หน้าเอกสารเดี่ยว -->
   <div id="printWorkOrderOnlyZone" class="hidden"></div>
 
-  <script src="storage.js"></script>
-  <script src="excel-handler.js"></script>
-  <script src="dashboard.js"></script>
-  <script src="staff.js"></script>
-  <script type="module" src="firebase-config.js"></script>
-  <script src="app.js"></script>
-  <script type="module" src="parcel_js/app.js?v=1791950992421"></script>
+  <!-- Unified Application Modules -->
+  <script type="module" src="js/common/firebase.js"></script>
+  <script src="js/repair/repair-storage.js"></script>
+  <script src="js/repair/repair-excel.js"></script>
+  <script src="js/repair/repair-dashboard.js"></script>
+  <script src="js/repair/repair-staff.js"></script>
+  <script src="js/repair/repair-core.js"></script>
+  <script type="module" src="js/parcel/parcel-core.js?v=2.0.0"></script>
 </body>
 </html>
