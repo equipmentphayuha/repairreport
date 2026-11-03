@@ -1,0 +1,268 @@
+/* style.css - การตกแต่งสไตล์เพิ่มเติม */
+body {
+  font-family: 'Prompt', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* แอนิเมชันสำหรับเปิด Modal */
+.modal-enter {
+  animation: fadeInModal 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInModal {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ปรับแต่ง Scrollbar สำหรับตาราง */
+::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ==========================================================================
+   สไตล์สำหรับการพิมพ์ หรือ Export เป็นเอกสาร PDF (Executive & Official Print)
+   ========================================================================== */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  html, body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .shadow-sm, .shadow-md, .shadow-2xl, .shadow-lg, .shadow-2xs {
+    box-shadow: none !important;
+  }
+
+  /* ปรับแต่งหน้าเอกสารการพิมพ์ A4 พอดี 1 หน้า */
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm;
+  }
+
+  /* โหมดพิมพ์ใบส่งซ่อมเดี่ยว */
+  body.printing-work-order > *:not(#printWorkOrderOnlyZone) {
+    display: none !important;
+  }
+  body.printing-work-order #printWorkOrderOnlyZone {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* โหมดพิมพ์รายงานสรุปผู้บริหาร (Executive PDF Report) */
+  body.printing-executive-report > *:not(#printExecutiveReportZone) {
+    display: none !important;
+  }
+  body.printing-executive-report #printExecutiveReportZone {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .executive-a4-sheet {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+
+
+/* ─── Styles from ระบบคีย์พัสดุ (Inventory) ─── */
+/* Global Styles for Hospital Equipment Management */
+
+
+body {
+    
+}
+
+.table-container {
+    max-height: 600px;
+    overflow-x: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Responsive custom scrollbars */
+.table-container::-webkit-scrollbar,
+#configModal .overflow-y-auto::-webkit-scrollbar,
+#importModal .overflow-y-auto::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.table-container::-webkit-scrollbar-thumb,
+#configModal .overflow-y-auto::-webkit-scrollbar-thumb,
+#importModal .overflow-y-auto::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 3px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8;
+}
+
+/* Mobile & Tablet Optimizations */
+@media (max-width: 768px) {
+    input, select, button {
+        font-size: 16px !important; /* Prevents auto-zoom on iOS Safari */
+    }
+    
+    .table-container table {
+        min-width: 800px; /* Ensure table remains readable and scrollable horizontally */
+    }
+}
+
+/* Mobile Card View for Equipment List */
+.mobile-card {
+    transition: all 0.2s ease-in-out;
+}
+.mobile-card:active {
+    transform: scale(0.99);
+}
+
+/* Resizable Table Header & Column Styles */
+.resizable-th {
+    position: relative;
+    user-select: none;
+}
+
+.resizer-handle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 6px;
+    cursor: col-resize;
+    user-select: none;
+    height: 100%;
+    z-index: 1;
+}
+
+.resizer-handle:hover,
+.resizing {
+    background-color: #3b82f6;
+    opacity: 0.8;
+}
+
+/* Compact cell styles with truncation and tooltip */
+.cell-name {
+    max-width: 200px;
+    min-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cell-location {
+    max-width: 160px;
+    min-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cell-div, .cell-type {
+    max-width: 160px;
+    min-width: 110px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+/* แบบฟอร์มใบส่งซ่อม/ขออนุมัติซ่อม โรงพยาบาลพยุหะคีรี แบบเป๊ะตามเอกสารต้นฉบับ */
+.official-work-order-sheet {
+  box-sizing: border-box;
+}
+
+@media print {
+  body.printing-work-order {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  body.printing-work-order #printWorkOrderOnlyZone {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    padding: 4mm 6mm !important;
+  }
+  body.printing-work-order .official-work-order-sheet {
+    width: 100% !important;
+    max-width: 100% !important;
+    font-family: 'TH SarabunPSK', 'TH Sarabun New', 'Sarabun', 'Prompt', sans-serif !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+
+/* สไตล์สำหรับการแก้ไขบนเอกสารใบส่งซ่อม (Interactive Slip) */
+.official-work-order-sheet [contenteditable="true"] {
+  outline: none;
+  transition: all 0.15s ease-in-out;
+  border-radius: 2px;
+}
+.official-work-order-sheet [contenteditable="true"]:hover {
+  background-color: #f1f5f9;
+}
+.official-work-order-sheet [contenteditable="true"]:focus {
+  background-color: #fef08a; /* highlight สีเหลืองอ่อนเวลาโฟกัสพิมพ์ */
+  box-shadow: 0 0 0 1px #ca8a04;
+}
+
+@media print {
+  .official-work-order-sheet [contenteditable="true"]:focus,
+  .official-work-order-sheet [contenteditable="true"]:hover {
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
+}
+
+/* รองรับการเลื่อนดูเอกสารแบบ Responsive ทั้งแนวตั้งและแนวนอน (Tablet Landscape & Mobile) */
+#printWorkOrderModal, #printExecutiveReportModal, #deptDetailModal, #repairModal, #staffModal {
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-height: 600px) {
+  /* เมื่อหน้าจอเตี้ย เช่น แท็บเล็ตหรือมือถือวางแนวนอน */
+  #printWorkOrderModal .modal-enter,
+  #printExecutiveReportModal .modal-enter {
+    height: 98vh !important;
+    max-height: 98vh !important;
+  }
+  #printWorkOrderContent,
+  #printExecutiveReportContent {
+    margin-top: 0 !important;
+    margin-bottom: 1rem !important;
+  }
+}
