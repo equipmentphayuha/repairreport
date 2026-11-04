@@ -60,12 +60,15 @@
         <button onclick="switchTab('staff')" id="btn-tab-staff" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-800 transition-colors flex items-center gap-1">
           <span>👷</span> เจ้าหน้าที่
         </button>
-        <button onclick="openAuditModal()" id="btn-audit-logs" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-800/80 hover:bg-emerald-800 border border-emerald-500/40 transition-colors flex items-center gap-1 shadow-inner" title="ดูประวัติการบันทึก/แก้ไข/ลบย้อนหลัง">
+        <button onclick="openAuditModal()" id="btn-audit-logs" class="btn-admin-only px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-800/80 hover:bg-emerald-800 border border-emerald-500/40 transition-colors flex items-center gap-1 shadow-inner" style="display: none;" title="ดูประวัติการบันทึก/แก้ไข/ลบย้อนหลัง">
           <span>📝</span> ประวัติ (Audit Log)
         </button>
-        <button onclick="setAuditUserPrompt()" class="px-2 py-1.5 rounded-lg text-xs font-medium bg-teal-800/60 hover:bg-teal-800 transition flex items-center gap-1 text-teal-100" title="ระบุตัวตนผู้ใช้งานปัจจุบัน">
-          <span>👤</span> <span id="currentUserDisplay" class="max-w-[80px] truncate">ผู้ใช้งาน</span>
+        <button onclick="openAdminUsersModal()" id="btn-tab-admin-users" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-700 hover:bg-rose-800 text-white transition-colors flex items-center gap-1 shadow" style="display: none;">
+          <span>👥</span> จัดการสมาชิก
         </button>
+        <div id="userProfileHeaderBadge" class="flex items-center gap-1.5 pl-2 border-l border-teal-600">
+          <!-- โหลดข้อมูล Badge ผู้ใช้และปุ่ม Logout -->
+        </div>
       </div>
     </div>
   </header>
@@ -1613,9 +1616,128 @@
     </div>
   </div>
 
+  <!-- ========================================================================= -->
+  <!-- MODAL: ประตูความปลอดภัยยืนยันตัวตน (Gatekeeper Auth Overlay)              -->
+  <!-- ========================================================================= -->
+  <div id="authGatekeeperModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4 z-[999] no-print">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100 animate-fade-in">
+      
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-teal-800 to-slate-800 text-white p-6 text-center">
+        <span class="text-4xl block mb-2">🏥</span>
+        <h2 class="text-lg font-bold leading-snug">ระบบครุภัณฑ์ & ซ่อมบำรุง</h2>
+        <p class="text-xs text-teal-200 mt-1">โรงพยาบาลพยุหะคีรี จ.นครสวรรค์</p>
+        <span class="inline-block mt-2 text-[10px] bg-teal-900/60 text-teal-300 px-3 py-0.5 rounded-full border border-teal-600/40">
+          🔒 ระบบสงวนสิทธิ์เฉพาะเจ้าหน้าที่ที่ได้รับอนุญาต
+        </span>
+      </div>
+
+      <!-- Auth Switch Tabs -->
+      <div class="flex border-b border-slate-200 bg-slate-50">
+        <button id="tabLoginBtn" type="button" onclick="switchAuthTab('login')" class="flex-1 py-3 text-center text-xs font-bold border-b-2 border-teal-600 text-teal-700 transition">
+          🔐 เข้าสู่ระบบ
+        </button>
+        <button id="tabRegisterBtn" type="button" onclick="switchAuthTab('register')" class="flex-1 py-3 text-center text-xs font-medium text-slate-500 hover:text-slate-800 transition">
+          📝 ลงทะเบียนขอเข้าใช้งาน
+        </button>
+      </div>
+
+      <!-- Error / Alert Message Box -->
+      <div id="authErrorMessage" class="hidden mx-6 mt-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold leading-relaxed">
+      </div>
+
+      <!-- 1. แบบฟอร์มเข้าสู่ระบบ (Login Form) -->
+      <div id="loginFormContainer" class="p-6">
+        <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">อีเมลผู้ใช้งาน</label>
+            <input type="email" id="loginEmail" required placeholder="name@hospital.moph.go.th" class="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs bg-slate-50 focus:bg-white focus:outline-teal-600">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">รหัสผ่าน</label>
+            <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs bg-slate-50 focus:bg-white focus:outline-teal-600">
+          </div>
+          <button type="submit" id="loginSubmitBtn" class="w-full bg-teal-700 hover:bg-teal-800 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-1.5">
+            <span>🔐</span> เข้าสู่ระบบ
+          </button>
+        </form>
+      </div>
+
+      <!-- 2. แบบฟอร์มลงทะเบียนขอเข้าใช้งาน (Register Form) -->
+      <div id="registerFormContainer" class="p-6 hidden">
+        <form onsubmit="handleRegisterSubmit(event)" class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-0.5">ชื่อ - นามสกุล <span class="text-rose-500">*</span></label>
+            <input type="text" id="regName" required placeholder="นาย/นาง/น.ส. ..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-slate-50 focus:outline-teal-600">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-0.5">แผนก / ฝ่าย / งาน <span class="text-rose-500">*</span></label>
+            <input type="text" id="regDept" required placeholder="เช่น งานอุบัติเหตุฉุกเฉิน, ช่างซ่อมบำรุง" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-slate-50 focus:outline-teal-600">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-0.5">ประเภทสิทธิ์ที่ขอใช้งาน <span class="text-rose-500">*</span></label>
+            <select id="regRole" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-slate-50 focus:outline-teal-600">
+              <option value="general_user" selected>ผู้ใช้ทั่วไป / ผู้ส่งซ่อมประจำแผนก</option>
+              <option value="technician">ช่างซ่อมบำรุง</option>
+              <option value="parcel_staff">เจ้าหน้าที่พัสดุ</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-0.5">อีเมลสำหรับเข้าสู่ระบบ <span class="text-rose-500">*</span></label>
+            <input type="email" id="regEmail" required placeholder="example@email.com" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-slate-50 focus:outline-teal-600">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-0.5">ตั้งรหัสผ่าน (ขั้นต่ำ 6 ตัวอักษร) <span class="text-rose-500">*</span></label>
+            <input type="password" id="regPassword" minlength="6" required placeholder="••••••••" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-slate-50 focus:outline-teal-600">
+          </div>
+          <button type="submit" id="regSubmitBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition mt-2 flex items-center justify-center gap-1.5">
+            <span>📝</span> ส่งคำขอลงทะเบียน
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: จัดการผู้ใช้งานและอนุมัติสมาชิก (Admin Users Management)            -->
+  <!-- ========================================================================= -->
+  <div id="adminUsersModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden no-print">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full flex flex-col max-h-[90vh] overflow-hidden">
+      <div class="bg-gradient-to-r from-rose-800 to-slate-800 text-white px-5 py-3.5 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">👥</span>
+          <div>
+            <h3 class="font-bold text-sm sm:text-base leading-tight">จัดการผู้ใช้งานและอนุมัติสมาชิก (Admin Management)</h3>
+            <p class="text-[11px] text-rose-200">อนุมัติคำขอลงทะเบียน, กำหนดบทบาทสิทธิ์ (RBAC) และเปิด/ปิดการใช้งาน</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeAdminUsersModal()" class="text-white/70 hover:text-white p-1 rounded-lg text-lg leading-none transition">✕</button>
+      </div>
+
+      <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-2 flex-wrap">
+        <div class="text-xs text-slate-600">
+          รายการผู้ใช้งานทั้งหมดในระบบ Cloud Firestore
+        </div>
+        <button onclick="renderAdminUsersList()" class="bg-teal-700 hover:bg-teal-800 text-white px-3 py-1 rounded-lg text-xs font-semibold transition flex items-center gap-1">
+          <span>🔄</span> รีเฟรชรายชื่อ
+        </button>
+      </div>
+
+      <div class="overflow-x-auto flex-1 min-h-[300px]" id="adminUsersListContainer">
+        <!-- Render โดย auth-guard.js -->
+      </div>
+
+      <div class="bg-slate-50 px-4 py-2.5 border-t border-slate-200 flex justify-end shrink-0">
+        <button type="button" onclick="closeAdminUsersModal()" class="px-4 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-semibold">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Unified Application Modules -->
   <script src="js/common/app-namespace.js"></script>
   <script type="module" src="js/common/firebase.js"></script>
+  <script src="js/common/auth-guard.js"></script>
   <script src="js/common/audit-view.js"></script>
   <script src="js/repair/repair-storage.js"></script>
   <script src="js/repair/repair-excel.js"></script>

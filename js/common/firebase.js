@@ -5,6 +5,13 @@
 
 import { initializeApp } from "firebase/app";
 import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
+} from "firebase/auth";
+import {
   getFirestore,
   initializeFirestore,
   persistentLocalCache,
@@ -15,6 +22,7 @@ import {
   getDoc,
   addDoc,
   setDoc,
+  updateDoc,
   deleteDoc,
   writeBatch,
   onSnapshot,
@@ -29,19 +37,42 @@ import { firebaseConfig, isFirebaseConfigured } from './config.js';
 
 let app = null;
 let db = null;
+let auth = null;
 
 try {
   app = initializeApp(firebaseConfig);
-  // ใช้ getFirestore มาตรฐาน เพื่อให้ SDK สลับโปรโตคอล (WebSockets / HTTP) อัตโนมัติ
-  // ป้องกันปัญหา experimentalForceLongPolling ค้าง 10s แล้วหลุด 502 / CORS บน Live Server
   db = getFirestore(app);
+  auth = getAuth(app);
   window.isFirebaseReady = true;
-  console.log("✅ Unified Firebase & Firestore initialized successfully");
+  console.log("✅ Unified Firebase, Firestore & Auth initialized successfully");
 } catch (err) {
   console.error("Firebase init warning:", err);
 }
 
-export { app, db, collection, doc, getDocs, getDoc, addDoc, setDoc, deleteDoc, writeBatch, onSnapshot, query, orderBy, where, limit, startAfter };
+export { 
+  app, 
+  db, 
+  auth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  collection, 
+  doc, 
+  getDocs, 
+  getDoc, 
+  addDoc, 
+  setDoc, 
+  updateDoc,
+  deleteDoc, 
+  writeBatch, 
+  onSnapshot, 
+  query, 
+  orderBy, 
+  where, 
+  limit, 
+  startAfter 
+};
 
 // ─── SYNC STATUS INDICATOR ───────────────────────────────────────────────────
 export function setSyncStatus(state) {
@@ -344,9 +375,182 @@ export async function fetchAuditLogs(limitCount = 50) {
   }
 }
 
+// ─── AUTHENTICATION & RBAC SERVICE ──────────────────────────────────────────
+
+/**
+ * เข้าสู่ระบบด้วย Email & Password
+ */
+export async function loginUser(email, password) {
+  if (!auth) throw new Error("Firebase Auth ยังไม่พร้อมใช้งาน");
+  const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
+  const uid = cred.user.uid;
+  const userDoc = await getDoc(doc(db, "users", uid));
+  if (!userDoc.exists()) {
+    await signOut(auth);
+    throw new Error("ไม่พบข้อมูลสิทธิ์ผู้ใช้งานในระบบ กรุณาติดต่อผู้ดูแลระบบ");
+  }
+  const profile = userDoc.data();
+  if (profile.status === 'pending_approval') {
+    await signOut(auth);
+    throw new Error("บัญชีของท่านอยู่ระหว่างรอผู้ดูแลระบบอนุมัติ");
+  }
+  if (profile.status === 'disabled' || profile.status === 'rejected') {
+    await signOut(auth);
+    throw new Error("บัญชีของท่านถูกระงับการใช้งาน");
+  }
+  return { user: cred.user, profile };
+}
+
+/**
+ * ลงทะเบียนขอเข้าใช้งานระบบ (Self-Registration with Pending Approval)
+ */
+export async function registerUserRequest({ email, password, name, department, role = 'general_user' }) {
+  if (!auth) throw new Error("Firebase Auth ยังไม่พร้อมใช้งาน");
+  const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+  const uid = cred.user.uid;
+  const newProfile = {
+    uid,
+    email: email.trim(),
+    name: name.trim(),
+    department: department.trim(),
+    role: role,
+    status: 'pending_approval',
+    createdAt: new Date().toISOString()
+  };
+  await setDoc(doc(db, "users", uid), newProfile);
+  // Log audit
+  await logAuditAction({
+    action: "register_request",
+    target: "users",
+    targetId: uid,
+    details: `ส่งคำขอลงทะเบียน: ${name} (${department}) แผนก/สิทธิ์: ${role}`
+  });
+  // Sign out ทันทีเพื่อให้รออนุมัติ
+  await signOut(auth);
+  return newProfile;
+}
+
+/**
+ * ผู้ดูแลระบบสร้างบัญชีให้เจ้าหน้าที่โดยตรง
+ */
+export async function adminCreateUser({ email, password, name, department, role = 'general_user' }) {
+  // บันทึกคำขอสร้างบัญชีลงใน Firestore เพื่อรอให้ผู้ใช้งานมาเคลม หรือลงทะเบียน
+  // หรือสร้าง record ผู้ใช้งานแบบ Active
+  const tempId = "user_" + Date.now();
+  const profile = {
+    email: email.trim(),
+    name: name.trim(),
+    department: department.trim(),
+    role: role,
+    status: 'active',
+    createdByAdmin: true,
+    createdAt: new Date().toISOString()
+  };
+  await setDoc(doc(db, "users", tempId), profile);
+  await logAuditAction({
+    action: "admin_create_user",
+    target: "users",
+    targetId: tempId,
+    details: `แอดมินสร้างบัญชี: ${name} (${email}) สิทธิ์: ${role}`
+  });
+  return profile;
+}
+
+/**
+ * ดึงรายการผู้ใช้งานทั้งหมด (สำหรับ Admin)
+ */
+export async function fetchAllUsers() {
+  if (!db) return [];
+  try {
+    const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
+    const snapshot = await getDocs(q);
+    const list = [];
+    snapshot.forEach(docSnap => {
+      const item = docSnap.data();
+      item.id = docSnap.id;
+      list.push(item);
+    });
+    return list;
+  } catch (err) {
+    console.error("fetchAllUsers error:", err);
+    return [];
+  }
+}
+
+/**
+ * อนุมัติผู้ใช้งาน / เปลี่ยนแปลงสถานะหรือสิทธิ์ (Admin Only)
+ */
+export async function updateUserStatus(userId, status, role = null) {
+  if (!db || !userId) return false;
+  try {
+    const docRef = doc(db, "users", userId);
+    const updateData = {
+      status,
+      updatedAt: new Date().toISOString()
+    };
+    if (role) updateData.role = role;
+    await updateDoc(docRef, updateData);
+    await logAuditAction({
+      action: "update_user_status",
+      target: "users",
+      targetId: userId,
+      details: `ปรับสถานะผู้ใช้ ${userId} เป็น ${status}${role ? ' สิทธิ์ ' + role : ''}`
+    });
+    return true;
+  } catch (err) {
+    console.error("updateUserStatus error:", err);
+    return false;
+  }
+}
+
+/**
+ * ล็อกเอาต์ออกจากระบบ
+ */
+export async function logoutUser() {
+  if (!auth) return;
+  await signOut(auth);
+  localStorage.removeItem('hospital_current_user');
+  window.location.reload();
+}
+
+/**
+ * เฝ้าติดตามการล็อกอิน
+ */
+export function onAuthStateChangedHandler(callback) {
+  if (!auth) return () => {};
+  return onAuthStateChanged(auth, async (firebaseUser) => {
+    if (firebaseUser) {
+      try {
+        const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+        if (userDoc.exists()) {
+          const profile = userDoc.data();
+          if (profile.status === 'active') {
+            callback(firebaseUser, profile);
+            return;
+          }
+        }
+      } catch (e) {
+        console.error("Error reading user profile:", e);
+      }
+      callback(null, null);
+    } else {
+      callback(null, null);
+    }
+  });
+}
+
 // ─── NAMESPACE & BACKWARD COMPATIBILITY ─────────────────────────────────────
 window.App = window.App || {};
 window.App.common = window.App.common || {};
+window.App.auth = {
+  login: loginUser,
+  register: registerUserRequest,
+  logout: logoutUser,
+  adminCreateUser,
+  fetchAllUsers,
+  updateUserStatus,
+  onAuthStateChanged: onAuthStateChangedHandler
+};
 window.App.audit = {
   log: logAuditAction,
   fetchLogs: fetchAuditLogs
@@ -355,7 +559,15 @@ window.App.audit = {
 window.App.common.firebase = {
   app,
   db,
+  auth,
   setSyncStatus,
+  loginUser,
+  registerUserRequest,
+  logoutUser,
+  adminCreateUser,
+  fetchAllUsers,
+  updateUserStatus,
+  onAuthStateChangedHandler,
   fetchRepairsFromCloud,
   fetchRepairsPaged,
   listenToRepairsRealtime,
@@ -372,6 +584,14 @@ window.App.common.firebase = {
 };
 
 // ส่งต่อตัวแปรให้ window เพื่อรองรับฟังก์ชันเดิมในระบบซ่อมบำรุง
+window.loginUser = loginUser;
+window.registerUserRequest = registerUserRequest;
+window.logoutUser = logoutUser;
+window.adminCreateUser = adminCreateUser;
+window.fetchAllUsers = fetchAllUsers;
+window.updateUserStatus = updateUserStatus;
+window.onAuthStateChangedHandler = onAuthStateChangedHandler;
+
 window.logAuditAction = logAuditAction;
 window.fetchAuditLogs = fetchAuditLogs;
 window.fetchRepairsFromCloud = fetchRepairsFromCloud;
