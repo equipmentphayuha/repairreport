@@ -176,15 +176,48 @@ export async function fetchRepairsPaged({ pageSize = 20, lastDoc = null, status 
   }
 }
 
-export async function saveRepairToCloud(repair) {
+export async function saveRepairToCloud(repair, isNew = false) {
   if (!db || !repair) return false;
-  const id = repair.id || repair.repairNo;
+  let id = repair.id || repair.repairNo;
   if (!id) return false;
   try {
     setSyncStatus("saving");
-    const docId = String(id).replace(/\//g, "_");
-    const docRef = doc(db, "repairs", docId);
-    await setDoc(docRef, repair, { merge: true });
+
+    // ถ้าเป็นการสร้างใบส่งซ่อมใหม่: ตรวจสอบการชนกันของเลขที่ใบส่งซ่อม (Race Condition Prevention)
+    if (isNew) {
+      let docId = String(id).replace(/\//g, "_");
+      let docRef = doc(db, "repairs", docId);
+      let docSnap = await getDoc(docRef);
+
+      // ถ้าพบว่ามีคนบันทึกเลขนี้ไปก่อนหน้าแล้ว ให้คำนวณและรันเลขใหม่ถัดไปทันที
+      if (docSnap.exists()) {
+        console.warn(`⚠️ [Conflict Detected] เลขที่ใบซ่อม ${id} ซ้ำกับในระบบ กำลังรันเลขใหม่ถัดไป...`);
+        const parts = String(id).split('/');
+        let seq = parseInt(parts[0], 10) || 1;
+        const fy = parts[1] || '';
+
+        // วนลูปหาเลขถัดไปที่ยังว่างอยู่จริงบน Cloud
+        while (docSnap.exists()) {
+          seq++;
+          id = fy ? `${seq}/${fy}` : String(seq);
+          docId = String(id).replace(/\//g, "_");
+          docRef = doc(db, "repairs", docId);
+          docSnap = await getDoc(docRef);
+        }
+
+        console.log(`✅ [Resolved] ได้รับเลขที่ใบซ่อมใหม่: ${id}`);
+        repair.repairNo = id;
+        repair.id = id;
+      }
+
+      await setDoc(docRef, repair, { merge: true });
+    } else {
+      // กรณีเป็นการแก้ไข (Update) ข้อมูลเดิม
+      const docId = String(id).replace(/\//g, "_");
+      const docRef = doc(db, "repairs", docId);
+      await setDoc(docRef, repair, { merge: true });
+    }
+
     setSyncStatus("ok");
     return true;
   } catch (err) {

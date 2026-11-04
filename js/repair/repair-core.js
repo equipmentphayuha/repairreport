@@ -825,13 +825,18 @@ async function saveRepair(e) {
     const submitBtn = e.target.querySelector('button[type="submit"]');
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '⏳ กำลังบันทึก...'; }
 
-    const ok = await window.saveRepairToCloud(dataObj);
+    const ok = await window.saveRepairToCloud(dataObj, !isEditing);
 
     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'บันทึกข้อมูล'; }
 
     if (!ok) {
       alert('❌ บันทึกไปยังฐานข้อมูลไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อ แล้วลองใหม่อีกครั้ง');
       return; // ไม่ปิด modal เพื่อให้ผู้ใช้ลองใหม่ได้
+    }
+
+    // ถ้ามีการรันเลขใหม่เนื่องจากชนกับผู้อื่น ให้แจ้งผู้ใช้ทราบ
+    if (!isEditing && dataObj.repairNo !== document.getElementById('formRepairNo').value.trim()) {
+      alert(`ℹ️ มีการส่งใบซ่อมพร้อมกัน ระบบจึงได้รันเลขที่ใบส่งซ่อมใหม่ให้อัตโนมัติเป็น: ${dataObj.repairNo}`);
     }
 
     // Audit Log: บันทึกประวัติการสร้างหรือแก้ไขใบส่งซ่อม
@@ -1437,8 +1442,9 @@ async function saveSlipBackToSystem() {
   const btn = document.getElementById('btnSaveSlipToSystem');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
 
+  const isNewSlip = currentSlipRepairIndex === null;
   if (window.isFirebaseReady) {
-    await window.saveRepairToCloud(dataObj);
+    await window.saveRepairToCloud(dataObj, isNewSlip);
   }
 
   // อัปเดตอาเรย์ repairs ในเครื่อง
