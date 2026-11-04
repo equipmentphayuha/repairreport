@@ -639,7 +639,20 @@ let parcelDashboardDataCache = null;
 function renderParcelDashboard() {
     const dashSection = document.getElementById('dashboardSection');
     if (!dashSection) return;
-    const totalCount = currentData.length;
+
+    // ตรวจสอบสิทธิ์ผู้ใช้งาน: หากเป็น general_user ให้คำนวณและแสดงผลเฉพาะกลุ่มงาน/แผนกของตนเอง
+    const profile = window.currentUserProfile;
+    const isGeneralUser = profile && profile.role === 'general_user' && profile.department;
+    let targetDataset = currentData;
+    if (isGeneralUser) {
+        const cleanUserDept = profile.department.replace(/^(กลุ่มงาน|งาน|ฝ่าย)/, '').trim().toLowerCase();
+        targetDataset = currentData.filter(item => {
+            const itemDiv = (item.div || '').replace(/^(กลุ่มงาน|งาน|ฝ่าย)/, '').trim().toLowerCase();
+            return itemDiv === cleanUserDept || itemDiv.includes(cleanUserDept) || cleanUserDept.includes(itemDiv);
+        });
+    }
+
+    const totalCount = targetDataset.length;
     let totalValue = 0;
     let totalBookValue = 0;
     let totalAccDepr = 0;
@@ -867,7 +880,11 @@ function renderDataViews() {
     const totalEl = document.getElementById('totalItems');
     if (totalEl) {
         const filteredCount = getFilteredAndSortedData().length;
-        if (selectedFilterDiv || selectedFilterType || searchQuery) {
+        const profile = window.currentUserProfile;
+        const isGeneralUser = profile && profile.role === 'general_user';
+        if (isGeneralUser) {
+            totalEl.innerHTML = `${filteredCount} <span class="text-xs text-gray-500 font-normal">รายการ (${profile.department || 'แผนกของคุณ'})</span>`;
+        } else if (selectedFilterDiv || selectedFilterType || searchQuery) {
             totalEl.innerHTML = `${filteredCount} <span class="text-xs text-gray-500 font-normal">/ ทั้งหมด ${currentData.length}</span>`;
         } else {
             totalEl.textContent = currentData.length;
