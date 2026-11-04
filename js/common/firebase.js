@@ -19,7 +19,10 @@ import {
   writeBatch,
   onSnapshot,
   query,
-  orderBy
+  orderBy,
+  where,
+  limit,
+  startAfter
 } from "firebase/firestore";
 
 import { firebaseConfig, isFirebaseConfigured } from './config.js';
@@ -38,7 +41,7 @@ try {
   console.error("Firebase init warning:", err);
 }
 
-export { app, db, collection, doc, getDocs, getDoc, addDoc, setDoc, deleteDoc, writeBatch, onSnapshot, query, orderBy };
+export { app, db, collection, doc, getDocs, getDoc, addDoc, setDoc, deleteDoc, writeBatch, onSnapshot, query, orderBy, where, limit, startAfter };
 
 // ─── SYNC STATUS INDICATOR ───────────────────────────────────────────────────
 export function setSyncStatus(state) {
@@ -58,10 +61,19 @@ window.setSyncStatus = setSyncStatus;
 
 // ─── Bridge Functions สำหรับโมดูลงานซ่อม (Repair Module Bridge) ───────────────
 
-export async function fetchRepairsFromCloud() {
+export async function fetchRepairsFromCloud(filters = {}) {
   if (!db) return [];
   try {
-    const q = query(collection(db, "repairs"), orderBy("date", "desc"));
+    let constraints = [];
+    if (filters.status && filters.status !== 'all') {
+      constraints.push(where("status", "==", filters.status));
+    }
+    constraints.push(orderBy("date", "desc"));
+    if (filters.limitCount && typeof filters.limitCount === 'number') {
+      constraints.push(limit(filters.limitCount));
+    }
+
+    const q = query(collection(db, "repairs"), ...constraints);
     const snapshot = await getDocs(q);
     const list = [];
     snapshot.forEach(docSnap => list.push(docSnap.data()));
@@ -72,14 +84,65 @@ export async function fetchRepairsFromCloud() {
   }
 }
 
-export function listenToRepairsRealtime(onDataUpdate) {
+export function listenToRepairsRealtime(onDataUpdate, filters = {}) {
   if (!db) return () => {};
-  const q = query(collection(db, "repairs"), orderBy("date", "desc"));
-  return onSnapshot(q, (snapshot) => {
+  try {
+    let constraints = [];
+    if (filters.status && filters.status !== 'all') {
+      constraints.push(where("status", "==", filters.status));
+    }
+    constraints.push(orderBy("date", "desc"));
+    if (filters.limitCount && typeof filters.limitCount === 'number') {
+      constraints.push(limit(filters.limitCount));
+    }
+
+    const q = query(collection(db, "repairs"), ...constraints);
+    return onSnapshot(q, (snapshot) => {
+      const list = [];
+      snapshot.forEach(docSnap => list.push(docSnap.data()));
+      onDataUpdate(list);
+    }, (err) => console.error("Realtime repairs error:", err));
+  } catch (err) {
+    console.error("listenToRepairsRealtime setup error:", err);
+    return () => {};
+  }
+}
+
+/**
+ * ดึงรายการซ่อมแบบแบ่งหน้า (Cursor-based Pagination)
+ * @param {Object} options { pageSize: 20, lastDoc: DocumentSnapshot|null, status: string|null }
+ */
+export async function fetchRepairsPaged({ pageSize = 20, lastDoc = null, status = null } = {}) {
+  if (!db) return { list: [], lastDoc: null, hasMore: false };
+  try {
+    let constraints = [];
+    if (status && status !== 'all') {
+      constraints.push(where("status", "==", status));
+    }
+    constraints.push(orderBy("date", "desc"));
+    if (lastDoc) {
+      constraints.push(startAfter(lastDoc));
+    }
+    constraints.push(limit(pageSize));
+
+    const q = query(collection(db, "repairs"), ...constraints);
+    const snapshot = await getDocs(q);
     const list = [];
-    snapshot.forEach(docSnap => list.push(docSnap.data()));
-    onDataUpdate(list);
-  }, (err) => console.error("Realtime repairs error:", err));
+    snapshot.forEach(docSnap => {
+      const item = docSnap.data();
+      item._docSnapshot = docSnap;
+      list.push(item);
+    });
+    const newLastDoc = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null;
+    return {
+      list,
+      lastDoc: newLastDoc,
+      hasMore: snapshot.docs.length === pageSize
+    };
+  } catch (err) {
+    console.error("fetchRepairsPaged error:", err);
+    return { list: [], lastDoc: null, hasMore: false };
+  }
 }
 
 export async function saveRepairToCloud(repair) {
@@ -120,13 +183,55 @@ export async function deleteRepairFromCloud(id) {
 export async function fetchEquipmentsFromCloud() {
   if (!db) return [];
   try {
-    const snapshot = await getDocs(collection(db, "equipments"));
+    const snapshot = await getDocs(collection(db, "hospital_equipments"));
     const list = [];
-    snapshot.forEach(docSnap => list.push(docSnap.data()));
+    snapshot.forEach(docSnap => {
+      const item = docSnap.data();
+      item.id = docSnap.id;
+      list.push(item);
+    });
     return list;
   } catch (err) {
     console.error("fetchEquipmentsFromCloud error:", err);
     return [];
+  }
+}
+
+/**
+ * ดึงรายการครุภัณฑ์แบบแบ่งหน้า (Cursor-based Pagination)
+ * @param {Object} options { pageSize: 25, lastDoc: DocumentSnapshot|null, category: string|null }
+ */
+export async function fetchEquipmentsPaged({ pageSize = 25, lastDoc = null, category = null } = {}) {
+  if (!db) return { list: [], lastDoc: null, hasMore: false };
+  try {
+    let constraints = [];
+    if (category && category !== 'all') {
+      constraints.push(where("type", "==", category));
+    }
+    constraints.push(orderBy("name", "asc"));
+    if (lastDoc) {
+      constraints.push(startAfter(lastDoc));
+    }
+    constraints.push(limit(pageSize));
+
+    const q = query(collection(db, "hospital_equipments"), ...constraints);
+    const snapshot = await getDocs(q);
+    const list = [];
+    snapshot.forEach(docSnap => {
+      const item = docSnap.data();
+      item.id = docSnap.id;
+      item._docSnapshot = docSnap;
+      list.push(item);
+    });
+    const newLastDoc = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null;
+    return {
+      list,
+      lastDoc: newLastDoc,
+      hasMore: snapshot.docs.length === pageSize
+    };
+  } catch (err) {
+    console.error("fetchEquipmentsPaged error:", err);
+    return { list: [], lastDoc: null, hasMore: false };
   }
 }
 
@@ -252,10 +357,12 @@ window.App.common.firebase = {
   db,
   setSyncStatus,
   fetchRepairsFromCloud,
+  fetchRepairsPaged,
   listenToRepairsRealtime,
   saveRepairToCloud,
   deleteRepairFromCloud,
   fetchEquipmentsFromCloud,
+  fetchEquipmentsPaged,
   fetchStaffFromCloud,
   listenToStaffRealtime,
   saveStaffToCloud,
@@ -268,11 +375,13 @@ window.App.common.firebase = {
 window.logAuditAction = logAuditAction;
 window.fetchAuditLogs = fetchAuditLogs;
 window.fetchRepairsFromCloud = fetchRepairsFromCloud;
+window.fetchRepairsPaged = fetchRepairsPaged;
 window.listenToRepairsRealtime = listenToRepairsRealtime;
 window.saveRepairToCloud = saveRepairToCloud;
 window.deleteRepairFromCloud = deleteRepairFromCloud;
 
 window.fetchEquipmentsFromCloud = fetchEquipmentsFromCloud;
+window.fetchEquipmentsPaged = fetchEquipmentsPaged;
 
 window.fetchStaffFromCloud = fetchStaffFromCloud;
 window.listenToStaffRealtime = listenToStaffRealtime;
