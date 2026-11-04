@@ -430,12 +430,37 @@ export async function loginUser(email, password) {
   if (!auth) throw new Error("Firebase Auth ยังไม่พร้อมใช้งาน");
   const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
   const uid = cred.user.uid;
-  const userDoc = await getDoc(doc(db, "users", uid));
-  if (!userDoc.exists()) {
+  let profile = null;
+  try {
+    const userDoc = await getDoc(doc(db, "users", uid));
+    if (userDoc.exists()) {
+      profile = userDoc.data();
+    }
+  } catch (err) {
+    console.warn("Could not read userDoc from firestore, check super admin:", err);
+  }
+
+  // Fallback พิเศษสำหรับ Super Admin เริ่มต้นระบบ (phathanbo@gmail.com)
+  if (!profile && email.trim().toLowerCase() === "phathanbo@gmail.com") {
+    profile = {
+      uid,
+      email: email.trim(),
+      name: "ผู้ดูแลระบบหลัก (Admin)",
+      department: "ศูนย์คอมพิวเตอร์และเทคโนโลยีสารสนเทศ",
+      role: "admin",
+      status: "active",
+      isFirstAdmin: true
+    };
+    // พยายามเซฟลง Firestore เผื่อ Rules ปลดแล้ว
+    try {
+      await setDoc(doc(db, "users", uid), profile, { merge: true });
+    } catch (_) {}
+  }
+
+  if (!profile) {
     await signOut(auth);
     throw new Error("ไม่พบข้อมูลสิทธิ์ผู้ใช้งานในระบบ กรุณาติดต่อผู้ดูแลระบบ");
   }
-  const profile = userDoc.data();
   if (profile.status === 'pending_approval') {
     await signOut(auth);
     throw new Error("บัญชีของท่านอยู่ระหว่างรอผู้ดูแลระบบอนุมัติ");
@@ -567,13 +592,35 @@ export function onAuthStateChangedHandler(callback) {
   return onAuthStateChanged(auth, async (firebaseUser) => {
     if (firebaseUser) {
       try {
-        const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-        if (userDoc.exists()) {
-          const profile = userDoc.data();
-          if (profile.status === 'active') {
-            callback(firebaseUser, profile);
-            return;
+        let profile = null;
+        try {
+          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+          if (userDoc.exists()) {
+            profile = userDoc.data();
           }
+        } catch (e) {
+          console.warn("Could not read user profile from firestore:", e);
+        }
+
+        // Fallback พิเศษสำหรับ Super Admin เริ่มต้นระบบ (phathanbo@gmail.com)
+        if (!profile && firebaseUser.email && firebaseUser.email.toLowerCase() === "phathanbo@gmail.com") {
+          profile = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            name: "ผู้ดูแลระบบหลัก (Admin)",
+            department: "ศูนย์คอมพิวเตอร์และเทคโนโลยีสารสนเทศ",
+            role: "admin",
+            status: "active",
+            isFirstAdmin: true
+          };
+          try {
+            await setDoc(doc(db, "users", firebaseUser.uid), profile, { merge: true });
+          } catch (_) {}
+        }
+
+        if (profile && profile.status === 'active') {
+          callback(firebaseUser, profile);
+          return;
         }
       } catch (e) {
         console.error("Error reading user profile:", e);

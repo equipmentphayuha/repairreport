@@ -4,13 +4,13 @@
  */
 
 export const firebaseConfig = {
-  apiKey: "AIzaSyDbF85T09sAJzUGQdEuIYQ2_U8TISY4wa0",
-  authDomain: "equipmentphayuha-e3f3f.firebaseapp.com",
-  projectId: "equipmentphayuha-e3f3f",
-  storageBucket: "equipmentphayuha-e3f3f.firebasestorage.app",
-  messagingSenderId: "494382324661",
-  appId: "1:494382324661:web:e876106fc5852acf4bd7fc",
-  measurementId: "G-LBX4QLTBQJ"
+  apiKey: "AIzaSyDNlTtpwdPzF9DRy4mkqqZKtRMzXkZ_5w4",
+  authDomain: "repirereport.firebaseapp.com",
+  projectId: "repirereport",
+  storageBucket: "repirereport.firebasestorage.app",
+  messagingSenderId: "668156127067",
+  appId: "1:668156127067:web:4bea5795d5bd65d3659c7e",
+  measurementId: "G-GR1XYEWVBS"
 };
 
 export const isFirebaseConfigured = Boolean(
