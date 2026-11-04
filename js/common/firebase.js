@@ -378,6 +378,52 @@ export async function fetchAuditLogs(limitCount = 50) {
 // ─── AUTHENTICATION & RBAC SERVICE ──────────────────────────────────────────
 
 /**
+ * ตรวจสอบว่าระบบมีผู้ดูแลระบบ (Admin) คนแรกแล้วหรือไม่
+ */
+export async function checkHasAdminUser() {
+  if (!db) return false;
+  try {
+    const q = query(collection(db, "users"), where("role", "==", "admin"), where("status", "==", "active"), limit(1));
+    const snap = await getDocs(q);
+    return !snap.empty;
+  } catch (err) {
+    console.warn("checkHasAdminUser error:", err);
+    return false;
+  }
+}
+
+/**
+ * ลงทะเบียนผู้ดูแลระบบคนแรกของระบบ (First System Admin Bootstrap)
+ */
+export async function bootstrapFirstAdmin({ email, password, name, department }) {
+  if (!auth) throw new Error("Firebase Auth ยังไม่พร้อมใช้งาน");
+  const hasAdmin = await checkHasAdminUser();
+  if (hasAdmin) {
+    throw new Error("ระบบมีผู้ดูแลระบบอยู่แล้ว ไม่สามารถสร้าง Admin หลักซ้ำได้");
+  }
+  const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+  const uid = cred.user.uid;
+  const adminProfile = {
+    uid,
+    email: email.trim(),
+    name: name.trim(),
+    department: department.trim() || "ศูนย์คอมพิวเตอร์ / บริหารทั่วไป",
+    role: "admin",
+    status: "active",
+    isFirstAdmin: true,
+    createdAt: new Date().toISOString()
+  };
+  await setDoc(doc(db, "users", uid), adminProfile);
+  await logAuditAction({
+    action: "bootstrap_first_admin",
+    target: "users",
+    targetId: uid,
+    details: `ลงทะเบียนผู้ดูแลระบบคนแรกของโรงพยาบาล: ${name} (${email})`
+  });
+  return adminProfile;
+}
+
+/**
  * เข้าสู่ระบบด้วย Email & Password
  */
 export async function loginUser(email, password) {
@@ -543,6 +589,8 @@ export function onAuthStateChangedHandler(callback) {
 window.App = window.App || {};
 window.App.common = window.App.common || {};
 window.App.auth = {
+  checkHasAdminUser,
+  bootstrapFirstAdmin,
   login: loginUser,
   register: registerUserRequest,
   logout: logoutUser,
@@ -561,6 +609,8 @@ window.App.common.firebase = {
   db,
   auth,
   setSyncStatus,
+  checkHasAdminUser,
+  bootstrapFirstAdmin,
   loginUser,
   registerUserRequest,
   logoutUser,
@@ -584,6 +634,8 @@ window.App.common.firebase = {
 };
 
 // ส่งต่อตัวแปรให้ window เพื่อรองรับฟังก์ชันเดิมในระบบซ่อมบำรุง
+window.checkHasAdminUser = checkHasAdminUser;
+window.bootstrapFirstAdmin = bootstrapFirstAdmin;
 window.loginUser = loginUser;
 window.registerUserRequest = registerUserRequest;
 window.logoutUser = logoutUser;

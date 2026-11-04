@@ -1656,6 +1656,20 @@
         </span>
       </div>
 
+      <!-- First Admin Setup Alert Banner (แสดงเฉพาะเมื่อยังไม่มี Admin) -->
+      <div id="firstAdminSetupBanner" class="hidden m-4 p-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between gap-3 text-xs text-amber-900 shadow-sm animate-pulse">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">⚠️</span>
+          <div>
+            <div class="font-bold text-amber-950">ยังไม่มีผู้ดูแลระบบ (Admin)</div>
+            <div class="text-[11px] text-amber-700">จำเป็นต้องตั้งค่าบัญชี Admin คนแรกเพื่อเริ่มใช้งาน</div>
+          </div>
+        </div>
+        <button type="button" onclick="openFirstAdminModal()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow transition whitespace-nowrap">
+          👑 ตั้งค่าเดี๋ยวนี้
+        </button>
+      </div>
+
       <!-- Auth Switch Tabs -->
       <div class="flex border-b border-slate-200 bg-slate-50">
         <button id="tabLoginBtn" type="button" onclick="switchAuthTab('login')" class="flex-1 py-3 text-center text-xs font-bold border-b-2 border-teal-600 text-teal-700 transition">
@@ -1720,6 +1734,51 @@
         </form>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: ตั้งค่าผู้ดูแลระบบคนแรก (First Admin Setup Modal)                   -->
+  <!-- ========================================================================= -->
+  <div id="firstAdminSetupModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[1000] hidden no-print">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-amber-200">
+      <div class="bg-gradient-to-r from-amber-600 to-amber-800 text-white p-5 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="text-2xl">👑</span>
+          <div>
+            <h3 class="font-bold text-base leading-tight">ตั้งค่าผู้ดูแลระบบหลัก (First Admin)</h3>
+            <p class="text-[11px] text-amber-100">สร้างบัญชีผู้ดูแลระบบคนแรกเพื่อเริ่มบริหารจัดการ</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeFirstAdminModal()" class="text-white/70 hover:text-white p-1 rounded-lg text-lg">✕</button>
+      </div>
+      
+      <form onsubmit="handleFirstAdminSubmit(event)" class="p-6 space-y-3.5">
+        <div class="p-3 bg-amber-50 rounded-xl text-amber-900 text-xs leading-relaxed border border-amber-200">
+          💡 ระบบตรวจพบว่ายังไม่มีบัญชีผู้ดูแลระบบ บัญชีนี้จะได้รับสิทธิ์ <b>Admin</b> ทันทีโดยไม่ต้องรออนุมัติ
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อ - สกุล ผู้ดูแลระบบ <span class="text-rose-500">*</span></label>
+          <input type="text" id="adminBootstrapName" required placeholder="นายแอดมิน ศูนย์คอมพิวเตอร์" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs bg-slate-50 focus:outline-teal-600">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">แผนก / ฝ่าย</label>
+          <input type="text" id="adminBootstrapDept" value="ศูนย์คอมพิวเตอร์และเทคโนโลยีสารสนเทศ" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs bg-slate-50 focus:outline-teal-600">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">อีเมลผู้ดูแลระบบ <span class="text-rose-500">*</span></label>
+          <input type="email" id="adminBootstrapEmail" required placeholder="admin@hospital.moph.go.th" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs bg-slate-50 focus:outline-teal-600">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">ตั้งรหัสผ่าน (ขั้นต่ำ 6 ตัวอักษร) <span class="text-rose-500">*</span></label>
+          <input type="password" id="adminBootstrapPassword" minlength="6" required placeholder="••••••••" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs bg-slate-50 focus:outline-teal-600">
+        </div>
+        <div class="pt-2">
+          <button type="submit" id="adminBootstrapSubmitBtn" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-1.5">
+            <span>👑</span> สร้างบัญชี Admin คนแรก
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 

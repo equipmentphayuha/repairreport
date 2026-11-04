@@ -14,6 +14,9 @@ function setupAuthUI() {
   const loginModal = document.getElementById("authGatekeeperModal");
   if (!loginModal) return;
 
+  // ตรวจสอบว่าระบบมี Admin คนแรกหรือยัง
+  setTimeout(checkInitialAdminSetup, 500);
+
   // ตรวจสอบ Auth State
   if (typeof window.onAuthStateChangedHandler === "function") {
     window.onAuthStateChangedHandler((user, profile) => {
@@ -30,6 +33,21 @@ function setupAuthUI() {
         showGatekeeper();
       }
     });
+  }
+}
+
+async function checkInitialAdminSetup() {
+  if (typeof window.checkHasAdminUser !== "function") return;
+  try {
+    const hasAdmin = await window.checkHasAdminUser();
+    const banner = document.getElementById("firstAdminSetupBanner");
+    if (!hasAdmin && banner) {
+      banner.classList.remove("hidden");
+    } else if (banner) {
+      banner.classList.add("hidden");
+    }
+  } catch (e) {
+    console.warn("checkInitialAdminSetup:", e);
   }
 }
 
@@ -206,7 +224,50 @@ window.handleLogout = async function () {
   }
 };
 
-// Modal จัดการผู้ใช้งานสำหรับแอดมิน
+// ลงทะเบียน Admin คนแรกผ่าน Setup Mode
+window.handleFirstAdminSubmit = async function (e) {
+  e.preventDefault();
+  const name = document.getElementById("adminBootstrapName").value;
+  const dept = document.getElementById("adminBootstrapDept").value;
+  const email = document.getElementById("adminBootstrapEmail").value;
+  const pass = document.getElementById("adminBootstrapPassword").value;
+  const btn = document.getElementById("adminBootstrapSubmitBtn");
+  const errBox = document.getElementById("authErrorMessage");
+
+  try {
+    btn.disabled = true;
+    btn.innerHTML = `<span>⏳ กำลังตั้งค่าระบบ...</span>`;
+    errBox.classList.add("hidden");
+
+    if (typeof window.bootstrapFirstAdmin === "function") {
+      await window.bootstrapFirstAdmin({
+        email,
+        password: pass,
+        name,
+        department: dept
+      });
+      alert("🎉 ตั้งค่าบัญชีผู้ดูแลระบบ (Admin) คนแรกสำเร็จแล้ว!\nกำลังเข้าสู่ระบบ...");
+      // Auto login ด้วยแอดมินคนแรกทันที
+      await window.loginUser(email, pass);
+    }
+  } catch (err) {
+    errBox.innerText = err.message || "เกิดข้อผิดพลาดในการตั้งค่า Admin";
+    errBox.classList.remove("hidden");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<span>👑 สร้างบัญชี Admin คนแรก</span>`;
+  }
+};
+
+window.openFirstAdminModal = function () {
+  const modal = document.getElementById("firstAdminSetupModal");
+  if (modal) modal.classList.remove("hidden");
+};
+
+window.closeFirstAdminModal = function () {
+  const modal = document.getElementById("firstAdminSetupModal");
+  if (modal) modal.classList.add("hidden");
+};
 window.openAdminUsersModal = async function () {
   const modal = document.getElementById("adminUsersModal");
   if (!modal) return;
