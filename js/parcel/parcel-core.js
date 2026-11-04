@@ -658,7 +658,7 @@ function renderParcelDashboard() {
     let totalAccDepr = 0;
     const typeMap = {};
     const divMap = {};
-    currentData.forEach(item => {
+    targetDataset.forEach(item => {
         // Price
         const cleanPriceStr = String(item.perUnit || '').replace(/,/g, '');
         const price = Number(cleanPriceStr) || 0;
