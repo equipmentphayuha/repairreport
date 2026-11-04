@@ -287,7 +287,10 @@ function switchTab(tab) {
 
   const activeClass   = "px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-teal-900 shadow transition-colors flex items-center gap-1";
   const inactiveClass = "px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-800 transition-colors flex items-center gap-1";
-  [btnCharts, btnTables, btnRepairs, btnStaff, btnInventory].forEach(b => { if (b) b.className = inactiveClass; });
+  [btnTables, btnRepairs, btnStaff, btnInventory].forEach(b => { if (b) b.className = inactiveClass; });
+  if (btnCharts) {
+    btnCharts.className = "px-2.5 py-1 rounded-lg text-xs font-semibold bg-teal-800 hover:bg-teal-900 text-white shadow transition-all flex items-center gap-1.5 border border-teal-500/40";
+  }
 
   if (tab === 'inventory') {
     if (secInventory) secInventory.classList.remove('hidden');
