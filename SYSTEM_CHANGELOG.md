@@ -103,7 +103,19 @@
 
 ---
 
-### 4. สรุปผลลัพธ์การ Build Production (Verification)
+### 4. การถ่ายโอนข้อมูลข้าม Firebase Project (Data Migration)
+
+- **Source Project:** `equipmentphayuha-e3f3f`
+- **Target Project:** `repirereport`
+- **ผลการโอนย้ายข้อมูล:**
+  - 👥 **เจ้าหน้าที่และช่าง (Collection `staff`):** โอนย้ายสำเร็จครบทั้ง **17 คน**
+  - 🔧 **ประวัติใบส่งซ่อม (Collection `repairs`):** โอนย้ายสำเร็จครบทั้ง **38 รายการ**
+  - 📦 **ทะเบียนครุภัณฑ์ (Collection `hospital_equipments`):** โอนย้ายสำเร็จครบทั้ง **1,404 รายการ**
+  - 👑 **ผู้ดูแลระบบ (Collection `users`):** บันทึกบัญชี Admin `phathanbo@gmail.com` สถานะ `active` เรียบร้อย
+
+---
+
+### 5. สรุปผลลัพธ์การ Build Production (Verification)
 
 คำสั่ง: `npm run build`
 - **Output Directory:** `dist/`
