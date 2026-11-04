@@ -340,13 +340,13 @@ function updateFilterDropdownOptions() {
 function getFilteredAndSortedData() {
     let list = [...currentData];
 
-    // ??????: ?? (general_user) ??????
+    // จำกัดการมองเห็น: หากเป็นผู้ใช้ทั่วไป (general_user) มองเห็นเฉพาะแผนกของตนเอง
     const profile = window.currentUserProfile;
     if (profile && profile.role === 'general_user' && profile.department) {
-        const userDept = profile.department.trim().toLowerCase();
+        const cleanUserDept = profile.department.replace(/^(กลุ่มงาน|งาน|ฝ่าย)/, '').trim().toLowerCase();
         list = list.filter(item => {
-            const itemDiv = (item.div || '').trim().toLowerCase();
-            return itemDiv === userDept || itemDiv.includes(userDept) || userDept.includes(itemDiv);
+            const itemDiv = (item.div || '').replace(/^(กลุ่มงาน|งาน|ฝ่าย)/, '').trim().toLowerCase();
+            return itemDiv === cleanUserDept || itemDiv.includes(cleanUserDept) || cleanUserDept.includes(itemDiv);
         });
     }
     // Filter by Div (แผนก)
@@ -873,6 +873,7 @@ function renderDataViews() {
             totalEl.textContent = currentData.length;
         }
     }
+window.renderParcelViews = renderDataViews;
 }
 // ===== EDIT & DELETE HANDLERS =====
 function setEditMode(on, item = null) {

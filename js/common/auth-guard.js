@@ -29,6 +29,11 @@ function setupAuthUI() {
           window.triggerFirebaseSyncIfAuthorized();
         }
 
+        // รีเฟรชการแสดงผลทะเบียนพัสดุให้กรองตามสิทธิ์ของผู้ใช้ที่เพิ่งเข้าสู่ระบบ
+        if (typeof window.renderParcelViews === "function") {
+          window.renderParcelViews();
+        }
+
         // หากเป็นผู้ใช้ทั่วไป (general_user) ให้นำทางไปที่แท็บใบส่งซ่อมทันที
         if (profile.role === "general_user") {
           if (typeof window.switchTab === "function") {

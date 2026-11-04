@@ -307,6 +307,7 @@ function switchTab(tab) {
     }
 
     if (typeof window.renderParcelDashboard === 'function') window.renderParcelDashboard();
+    if (typeof window.renderParcelViews === 'function') window.renderParcelViews();
   } else if (tab === 'charts') {
     if (secCharts) secCharts.classList.remove('hidden');
     if (btnCharts) {
