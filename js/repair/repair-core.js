@@ -297,6 +297,15 @@ function switchTab(tab) {
   if (tab === 'inventory') {
     if (secInventory) secInventory.classList.remove('hidden');
     if (btnInventory) btnInventory.className = activeBtnClass;
+
+    // ถ้าผู้ใช้มีสิทธิ์ระดับ 'executive' (ผู้บริหาร) ให้กางแดชบอร์ดสรุปสถิติทันที
+    const profile = window.currentUserProfile;
+    if (profile && (profile.role === 'executive' || profile.role === 'admin')) {
+      if (typeof window.openParcelDashboardSection === 'function') {
+        window.openParcelDashboardSection();
+      }
+    }
+
     if (typeof window.renderParcelDashboard === 'function') window.renderParcelDashboard();
   } else if (tab === 'charts') {
     if (secCharts) secCharts.classList.remove('hidden');

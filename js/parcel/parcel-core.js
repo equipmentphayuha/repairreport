@@ -1,4 +1,4 @@
-// Main Application Logic for Hospital Equipment Management
+﻿// Main Application Logic for Hospital Equipment Management
 import { db, collection, addDoc, getDocs, getDoc, onSnapshot, doc, setDoc, deleteDoc, writeBatch } from '../common/firebase.js';
 import { defaultParcelFields as defaultFields, isFirebaseConfigured } from '../common/config.js';
 import { parseQuickDate, parseNoidRange, calculateDepreciation } from '../common/utils.js';
@@ -1427,18 +1427,34 @@ if (viewModeCardBtn && viewModeTableBtn) {
 // ===== DASHBOARD TOGGLE =====
 const toggleDashboardBtn = document.getElementById('toggleDashboardBtn');
 const dashboardSection = document.getElementById('dashboardSection');
+function openParcelDashboardSection() {
+    const sec = document.getElementById('dashboardSection');
+    const btn = document.getElementById('toggleDashboardBtn');
+    if (sec) sec.classList.remove('hidden');
+    if (btn) {
+        btn.innerHTML = '✕ <span>ปิดแดชบอร์ด</span>';
+        btn.className = 'flex-1 sm:flex-initial bg-gray-600 text-white px-3 sm:px-4 py-2 rounded-lg shadow text-xs sm:text-sm hover:bg-gray-700 flex items-center justify-center gap-1 font-semibold transition-all';
+    }
+    if (typeof renderParcelDashboard === 'function') renderParcelDashboard();
+}
+function closeParcelDashboardSection() {
+    const sec = document.getElementById('dashboardSection');
+    const btn = document.getElementById('toggleDashboardBtn');
+    if (sec) sec.classList.add('hidden');
+    if (btn) {
+        btn.innerHTML = '📊 <span>สรุปแดชบอร์ด</span>';
+        btn.className = 'flex-1 sm:flex-initial bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 sm:px-4 py-2 rounded-lg shadow text-xs sm:text-sm hover:from-blue-700 hover:to-indigo-700 flex items-center justify-center gap-1 font-semibold transition-all';
+    }
+}
+window.openParcelDashboardSection = openParcelDashboardSection;
+window.closeParcelDashboardSection = closeParcelDashboardSection;
 if (toggleDashboardBtn && dashboardSection) {
     toggleDashboardBtn.addEventListener('click', () => {
         const isHidden = dashboardSection.classList.contains('hidden');
         if (isHidden) {
-            dashboardSection.classList.remove('hidden');
-            toggleDashboardBtn.innerHTML = '✕ <span>ปิดแดชบอร์ด</span>';
-            toggleDashboardBtn.className = 'flex-1 sm:flex-initial bg-gray-600 text-white px-3 sm:px-4 py-2 rounded-lg shadow text-xs sm:text-sm hover:bg-gray-700 flex items-center justify-center gap-1 font-semibold transition-all';
-            renderParcelDashboard();
+            openParcelDashboardSection();
         } else {
-            dashboardSection.classList.add('hidden');
-            toggleDashboardBtn.innerHTML = '📊 <span>สรุปแดชบอร์ด</span>';
-            toggleDashboardBtn.className = 'flex-1 sm:flex-initial bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 sm:px-4 py-2 rounded-lg shadow text-xs sm:text-sm hover:from-blue-700 hover:to-indigo-700 flex items-center justify-center gap-1 font-semibold transition-all';
+            closeParcelDashboardSection();
         }
     });
 }
