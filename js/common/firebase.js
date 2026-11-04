@@ -3,7 +3,7 @@
  * ศูนย์กลางการเชื่อมต่อ Cloud Firestore ตัวเดียวสำหรับทุกโมดูล (Unified Firestore Service)
  */
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { initializeApp } from "firebase/app";
 import {
   getFirestore,
   initializeFirestore,
@@ -20,7 +20,7 @@ import {
   onSnapshot,
   query,
   orderBy
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+} from "firebase/firestore";
 
 import { firebaseConfig, isFirebaseConfigured } from './config.js';
 
