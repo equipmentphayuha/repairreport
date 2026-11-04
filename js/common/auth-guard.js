@@ -53,17 +53,25 @@ async function checkInitialAdminSetup() {
 
 function showGatekeeper() {
   const modal = document.getElementById("authGatekeeperModal");
+  const appRoot = document.getElementById("appRootContainer");
   if (modal) {
     modal.classList.remove("hidden");
     modal.classList.add("flex");
+  }
+  if (appRoot) {
+    appRoot.style.display = "none";
   }
 }
 
 function hideGatekeeper() {
   const modal = document.getElementById("authGatekeeperModal");
+  const appRoot = document.getElementById("appRootContainer");
   if (modal) {
     modal.classList.add("hidden");
     modal.classList.remove("flex");
+  }
+  if (appRoot) {
+    appRoot.style.display = "block";
   }
 }
 
