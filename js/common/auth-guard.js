@@ -170,7 +170,14 @@ window.handleLoginSubmit = async function (e) {
       throw new Error("ฟังก์ชันเข้าสู่ระบบยังไม่พร้อม");
     }
   } catch (err) {
-    errBox.innerText = err.message || "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
+    console.error("Login Error:", err);
+    let msg = err.message || "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
+    if (err.code === "auth/invalid-credential" || err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
+      msg = "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
+    } else if (err.code === "auth/operation-not-allowed") {
+      msg = "ยังไม่ได้เปิดใช้งาน Email/Password ใน Firebase Console";
+    }
+    errBox.innerText = msg;
     errBox.classList.remove("hidden");
   } finally {
     btn.disabled = false;
@@ -208,7 +215,16 @@ window.handleRegisterSubmit = async function (e) {
       document.getElementById("loginPassword").value = "";
     }
   } catch (err) {
-    errBox.innerText = err.message || "เกิดข้อผิดพลาดในการลงทะเบียน";
+    console.error("Register Error:", err);
+    let msg = err.message || "เกิดข้อผิดพลาดในการลงทะเบียน";
+    if (err.code === "auth/email-already-in-use") {
+      msg = "อีเมลนี้มีอยู่ในระบบแล้ว กรุณาเข้าสู่ระบบ";
+    } else if (err.code === "auth/weak-password") {
+      msg = "รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร";
+    } else if (err.code === "auth/operation-not-allowed") {
+      msg = "ยังไม่ได้เปิดใช้งาน Email/Password ใน Firebase Console";
+    }
+    errBox.innerText = msg;
     errBox.classList.remove("hidden");
   } finally {
     btn.disabled = false;
@@ -251,8 +267,20 @@ window.handleFirstAdminSubmit = async function (e) {
       await window.loginUser(email, pass);
     }
   } catch (err) {
-    errBox.innerText = err.message || "เกิดข้อผิดพลาดในการตั้งค่า Admin";
+    console.error("First Admin Bootstrap Error:", err);
+    let msg = err.message || "เกิดข้อผิดพลาดในการตั้งค่า Admin";
+    if (err.code === "auth/email-already-in-use") {
+      msg = "อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น หรือเข้าสู่ระบบด้วยอีเมลนี้";
+    } else if (err.code === "auth/weak-password") {
+      msg = "รหัสผ่านง่ายเกินไป ต้องมีความยาวอย่างน้อย 6 ตัวอักษร";
+    } else if (err.code === "auth/invalid-email") {
+      msg = "รูปแบบอีเมลไม่ถูกต้อง กรุณาตรวจสอบอีเมลอีกครั้ง";
+    } else if (err.code === "auth/operation-not-allowed" || err.message?.includes("CONFIGURATION_NOT_FOUND") || err.message?.includes("OPERATION_NOT_ALLOWED")) {
+      msg = "⚠️ ใน Firebase Console ยังไม่ได้เปิดใช้งาน 'Email/Password' Provider กรุณาไปที่ Firebase Console > Authentication > Sign-in method แล้วกดเปิด Enable 'Email/Password'";
+    }
+    errBox.innerText = msg;
     errBox.classList.remove("hidden");
+    alert(msg);
   } finally {
     btn.disabled = false;
     btn.innerHTML = `<span>👑 สร้างบัญชี Admin คนแรก</span>`;
