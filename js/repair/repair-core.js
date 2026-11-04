@@ -874,6 +874,11 @@ window.onload = function() {
 };
 
 window.startFirebaseSync = async function() {
+  // ตรวจสอบว่าล็อกอินผ่านแล้วหรือยัง ถ้ายังไม่ล็อกอินห้ามยิงเด็ดขาด
+  if (!window.currentUserProfile) {
+    console.log("🔒 รอผู้ใช้เข้าสู่ระบบก่อนเริ่มซิงค์ Firebase...");
+    return;
+  }
   console.log("กำลังดึงข้อมูลล่าสุดจาก Firebase...");
 
   if (!window.isFirebaseReady) {

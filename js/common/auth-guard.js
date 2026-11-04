@@ -14,9 +14,6 @@ function setupAuthUI() {
   const loginModal = document.getElementById("authGatekeeperModal");
   if (!loginModal) return;
 
-  // ตรวจสอบว่าระบบมี Admin คนแรกหรือยัง
-  setTimeout(checkInitialAdminSetup, 500);
-
   // ตรวจสอบ Auth State
   if (typeof window.onAuthStateChangedHandler === "function") {
     window.onAuthStateChangedHandler((user, profile) => {
