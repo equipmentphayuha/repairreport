@@ -707,16 +707,13 @@ window.listenToStaffRealtime = listenToStaffRealtime;
 window.saveStaffToCloud = saveStaffToCloud;
 window.deleteStaffFromCloud = deleteStaffFromCloud;
 
-// เริ่มต้นซิงค์ Firebase ทันทีเมื่อโหลดโมดูลเสร็จ
-if (window.isFirebaseReady) {
-  setSyncStatus("ok");
-  if (typeof window.startFirebaseSync === 'function') {
-    window.startFirebaseSync();
-  } else {
-    window.addEventListener('DOMContentLoaded', () => {
-      if (typeof window.startFirebaseSync === 'function') {
-        window.startFirebaseSync();
-      }
-    });
+// เริ่มต้นซิงค์ Firebase ทันทีเมื่อผู้ใช้ล็อกอินผ่านแล้วเท่านั้น (ป้องกัน Permission Denied ก่อนล็อกอิน)
+export function triggerFirebaseSyncIfAuthorized() {
+  if (window.isFirebaseReady && window.currentUserProfile) {
+    setSyncStatus("ok");
+    if (typeof window.startFirebaseSync === 'function') {
+      window.startFirebaseSync();
+    }
   }
 }
+window.triggerFirebaseSyncIfAuthorized = triggerFirebaseSyncIfAuthorized;

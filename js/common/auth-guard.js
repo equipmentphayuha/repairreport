@@ -28,6 +28,9 @@ function setupAuthUI() {
         hideGatekeeper();
         applyRolePermissions(profile);
         updateUserHeaderBadge(profile);
+        if (typeof window.triggerFirebaseSyncIfAuthorized === "function") {
+          window.triggerFirebaseSyncIfAuthorized();
+        }
       } else {
         window.currentUserProfile = null;
         showGatekeeper();
