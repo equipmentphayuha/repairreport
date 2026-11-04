@@ -285,34 +285,42 @@ function switchTab(tab) {
 
   [secCharts, secTables, secRepairs, secStaff, secInventory].forEach(s => { if (s) s.classList.add('hidden'); });
 
-  const activeClass   = "px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-teal-900 shadow transition-colors flex items-center gap-1";
-  const inactiveClass = "px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-800 transition-colors flex items-center gap-1";
-  [btnTables, btnRepairs, btnStaff, btnInventory].forEach(b => { if (b) b.className = inactiveClass; });
+  const activeBtnClass   = "px-2.5 py-1 rounded-lg text-xs font-semibold bg-teal-900 text-white shadow-md transition-all flex items-center gap-1 border border-teal-400";
+  const inactiveBtnClass = "px-2.5 py-1 rounded-lg text-xs font-semibold bg-teal-600/70 text-teal-100 hover:bg-teal-800 hover:text-white transition-all flex items-center gap-1 border border-teal-500/30";
+  
+  if (btnInventory) btnInventory.className = inactiveBtnClass;
+  if (btnRepairs) btnRepairs.className = inactiveBtnClass;
   if (btnCharts) {
     btnCharts.className = "px-2.5 py-1 rounded-lg text-xs font-semibold bg-teal-800 hover:bg-teal-900 text-white shadow transition-all flex items-center gap-1.5 border border-teal-500/40";
   }
 
   if (tab === 'inventory') {
     if (secInventory) secInventory.classList.remove('hidden');
-    if (btnInventory) btnInventory.className = activeClass;
+    if (btnInventory) btnInventory.className = activeBtnClass;
     if (typeof window.renderParcelDashboard === 'function') window.renderParcelDashboard();
   } else if (tab === 'charts') {
     if (secCharts) secCharts.classList.remove('hidden');
-    if (btnCharts) btnCharts.className = activeClass;
+    if (btnCharts) {
+      btnCharts.className = "px-2.5 py-1 rounded-lg text-xs font-semibold bg-teal-950 text-white shadow-md ring-2 ring-teal-300 transition-all flex items-center gap-1.5 border border-teal-400";
+    }
     if (typeof renderDashboard === 'function') renderDashboard();
   } else if (tab === 'tables') {
     if (secTables) secTables.classList.remove('hidden');
-    if (btnTables) btnTables.className = activeClass;
+    if (btnCharts) {
+      btnCharts.className = "px-2.5 py-1 rounded-lg text-xs font-semibold bg-teal-950 text-white shadow-md ring-2 ring-teal-300 transition-all flex items-center gap-1.5 border border-teal-400";
+    }
     if (typeof renderDashboard === 'function') renderDashboard();
     if (typeof renderDashboardTables === 'function') renderDashboardTables();
   } else if (tab === 'staff') {
     if (secStaff) secStaff.classList.remove('hidden');
-    if (btnStaff) btnStaff.className = activeClass;
+    if (btnCharts) {
+      btnCharts.className = "px-2.5 py-1 rounded-lg text-xs font-semibold bg-teal-950 text-white shadow-md ring-2 ring-teal-300 transition-all flex items-center gap-1.5 border border-teal-400";
+    }
     if (typeof renderStaffDashboard === 'function') renderStaffDashboard();
   } else {
     // repairs (default)
     if (secRepairs) secRepairs.classList.remove('hidden');
-    if (btnRepairs) btnRepairs.className = activeClass;
+    if (btnRepairs) btnRepairs.className = activeBtnClass;
     if (typeof renderTable === 'function') renderTable();
   }
 }
