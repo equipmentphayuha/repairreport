@@ -71,7 +71,39 @@
 
 ---
 
-### 3. สรุปผลลัพธ์การ Build Production (Verification)
+### 3. ระบบความปลอดภัย ยืนยันตัวตน และควบคุมสิทธิ์ตามบทบาท (Phase 3: Auth & RBAC)
+
+- **Git Branch:** `feature-auth-rbac`
+- **Commit:** `6a72889` — *feat: implement Firebase Auth Gatekeeper, user registration approval and RBAC control*
+
+#### 3.1 ปัญหาเดิมก่อนแก้ไข
+- ผู้ใช้งานทุกคนที่เข้าถึง URL สามารถดูรายการครุภัณฑ์ ข้อมูลการซ่อมแซม และสถิติทั้งหมดได้ทันทีโดยไม่มีการตรวจสอบสิทธิ์
+- ขาดระบบระบุตัวตนที่ชัดเจนสำหรับเจ้าหน้าที่ และไม่มีการแยกสิทธิ์ระหว่างผู้ใช้ทั่วไป ช่างซ่อม และผู้ดูแลระบบ
+
+#### 3.2 รายละเอียดการแก้ไข
+1. **ติดตั้ง Firebase Auth Service ใน `js/common/firebase.js`:**
+   - เชื่อมต่อ `getAuth`, `signInWithEmailAndPassword`, `createUserWithEmailAndPassword`, `signOut`, `onAuthStateChanged`
+   - เพิ่มฟังก์ชันจัดการบัญชี:
+     - `loginUser(email, password)`: เข้าสู่ระบบและตรวจสอบสถานะ `status === 'active'`
+     - `registerUserRequest({ email, password, name, department, role })`: ส่งคำขอลงทะเบียน รอสถานะ `pending_approval`
+     - `adminCreateUser(...)`: แอดมินสร้างบัญชีให้เจ้าหน้าที่โดยตรง
+     - `fetchAllUsers()`, `updateUserStatus(uid, status, role)`: ระบบบริหารจัดการสมาชิกสำหรับ Admin
+2. **สร้างโมดูล Gatekeeper Guard (`js/common/auth-guard.js`):**
+   - ตรวจสอบสถานะการล็อกอินทุกครั้งที่เปิดหน้าเว็บ หากยังไม่ล็อกอินจะแสดง **Auth Overlay บังหน้าจอทั้งหมด** ไม่ให้คนนอกดูข้อมูลได้เด็ดขาด
+   - สลับสิทธิ์ UI อัตโนมัติตาม Role:
+     - `general_user`: ดูครุภัณฑ์ ส่งซ่อม ติดตามสถานะ
+     - `technician` / `parcel_staff`: อัปเดตสถานะงานซ่อม ปิดงาน บันทึกค่าใช้จ่าย
+     - `admin`: ปลดล็อกปุ่ม "จัดการสมาชิก" และ "ดูประวัติ Audit Log"
+3. **ปรับแต่งหน้าเว็บ `index.html`:**
+   - เพิ่ม Modal เข้าสู่ระบบ / ลงทะเบียนขอเข้าใช้งาน พร้อมสลับแท็บ
+   - เพิ่ม Modal จัดการผู้ใช้งานและอนุมัติสมาชิก (`adminUsersModal`)
+   - เพิ่มแถบแสดงชื่อเจ้าหน้าที่และปุ่มออกจากระบบที่มุมขวาบนของ Header
+4. **สรุปผลการทดสอบการคอมไพล์ (Build Verification):**
+   - คอมไพล์ผ่าน Vite Production Build สำเร็จ 100% ไร้ข้อผิดพลาด
+
+---
+
+### 4. สรุปผลลัพธ์การ Build Production (Verification)
 
 คำสั่ง: `npm run build`
 - **Output Directory:** `dist/`
