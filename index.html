@@ -122,18 +122,50 @@
         class="nav-tab-btn px-3 py-1 rounded-t-md text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1 bg-teal-600/60 hover:bg-teal-500/80 border-b-2 border-transparent">
         <span>🔧</span><span class="hidden sm:inline">ใบส่งซ่อม</span><span class="sm:hidden">ซ่อม</span>
       </button>
-      <button onclick="switchTab('charts')" id="btn-tab-charts"
-        class="nav-tab-btn px-3 py-1 rounded-t-md text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1 bg-teal-600/60 hover:bg-teal-500/80 border-b-2 border-transparent">
-        <span>📊</span><span class="hidden sm:inline">กราฟสถิติ</span><span class="sm:hidden">กราฟ</span>
-      </button>
-      <button onclick="switchTab('tables')" id="btn-tab-tables"
-        class="nav-tab-btn px-3 py-1 rounded-t-md text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1 bg-teal-600/60 hover:bg-teal-500/80 border-b-2 border-transparent">
-        <span>📑</span><span class="hidden sm:inline">แผนก/ครุภัณฑ์</span><span class="sm:hidden">แผนก</span>
-      </button>
-      <button onclick="switchTab('staff')" id="btn-tab-staff"
-        class="nav-tab-btn px-3 py-1 rounded-t-md text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1 bg-teal-600/60 hover:bg-teal-500/80 border-b-2 border-transparent">
-        <span>👷</span><span class="hidden sm:inline">เจ้าหน้าที่</span><span class="sm:hidden">ทีมงาน</span>
-      </button>
+
+      <!-- เมนูกราฟสถิติ (พร้อมดรอปดาวน์สำหรับ Admin / ผู้บริหาร) -->
+      <div class="relative stat-tab-item" id="chartsMenuWrapper" style="display: none;">
+        <button onclick="toggleChartsMenu(event)" id="btn-tab-charts"
+          class="nav-tab-btn px-3 py-1 rounded-t-md text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1 bg-teal-600/60 hover:bg-teal-500/80 border-b-2 border-transparent">
+          <span>📊</span><span class="hidden sm:inline">กราฟสถิติ</span><span class="sm:hidden">กราฟ</span><span class="text-[10px] ml-0.5">▾</span>
+        </button>
+
+        <!-- Dropdown Menu กราฟสถิติ -->
+        <div id="chartsDropdownMenu"
+          class="hidden absolute left-0 top-full mt-1 bg-white text-slate-800 rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50 min-w-[210px] animate-in fade-in zoom-in-95 duration-100">
+          <div class="px-3 py-2 bg-teal-50 border-b border-teal-100 text-[11px] font-bold text-teal-800 flex items-center gap-1">
+            <span>📈</span> รายงานและสถิติภาพรวม
+          </div>
+          <button onclick="selectChartTab('charts')"
+            class="w-full text-left px-3.5 py-2.5 text-xs font-medium hover:bg-teal-50/70 flex items-center gap-2.5 transition-colors">
+            <span class="text-base">🛠️</span>
+            <div>
+              <div class="font-bold text-slate-800">1. สถิติเครื่องมือ / งานซ่อม</div>
+              <div class="text-[10px] text-slate-400">ภาพรวมค่าใช้จ่าย & แนวโน้มการซ่อม</div>
+            </div>
+          </button>
+          <button onclick="selectChartTab('tables')"
+            class="w-full text-left px-3.5 py-2.5 text-xs font-medium hover:bg-teal-50/70 flex items-center gap-2.5 transition-colors border-t border-slate-100">
+            <span class="text-base">🏢</span>
+            <div>
+              <div class="font-bold text-slate-800">2. สถิติแผนก / ครุภัณฑ์</div>
+              <div class="text-[10px] text-slate-400">สรุปความถี่ & ค่าใช้จ่ายแยกตามแผนก</div>
+            </div>
+          </button>
+          <button onclick="selectChartTab('staff')"
+            class="w-full text-left px-3.5 py-2.5 text-xs font-medium hover:bg-teal-50/70 flex items-center gap-2.5 transition-colors border-t border-slate-100">
+            <span class="text-base">👷</span>
+            <div>
+              <div class="font-bold text-slate-800">3. สถิติเจ้าหน้าที่</div>
+              <div class="text-[10px] text-slate-400">ผลงานช่าง & สถิติผู้ส่งซ่อม</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- ปุ่มสำรอง (สำหรับ fallback ถ้ายังไม่มีสิทธิ์) -->
+      <button onclick="switchTab('tables')" id="btn-tab-tables" style="display:none;"></button>
+      <button onclick="switchTab('staff')" id="btn-tab-staff" style="display:none;"></button>
     </div>
   </header>
 
@@ -1756,6 +1788,7 @@
             <label class="block text-xs font-semibold text-slate-700 mb-0.5">ประเภทสิทธิ์ที่ขอใช้งาน <span class="text-rose-500">*</span></label>
             <select id="regRole" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-slate-50 focus:outline-teal-600">
               <option value="general_user" selected>ผู้ใช้ทั่วไป / ผู้ส่งซ่อมประจำแผนก</option>
+              <option value="executive">ผู้บริหาร (ดูรายงานและกราฟสถิติ)</option>
               <option value="technician">ช่างซ่อมบำรุง</option>
               <option value="parcel_staff">เจ้าหน้าที่พัสดุ</option>
             </select>

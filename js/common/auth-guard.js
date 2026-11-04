@@ -76,6 +76,9 @@ function updateUserHeaderBadge(profile) {
   if (profile.role === "admin") {
     roleBadge = "bg-rose-100 text-rose-800 border-rose-300";
     roleTitle = "ผู้ดูแลระบบ (Admin)";
+  } else if (profile.role === "executive") {
+    roleBadge = "bg-purple-100 text-purple-800 border-purple-300";
+    roleTitle = "ผู้บริหาร (Executive)";
   } else if (profile.role === "technician") {
     roleBadge = "bg-blue-100 text-blue-800 border-blue-300";
     roleTitle = "ช่างซ่อมบำรุง";
@@ -101,6 +104,14 @@ function updateUserHeaderBadge(profile) {
 function applyRolePermissions(profile) {
   const role = profile.role || "general_user";
   const isAdmin = role === "admin";
+  const isExecutive = role === "executive";
+  const canViewStats = isAdmin || isExecutive;
+
+  // เมนูกราฟสถิติ (แสดงเฉพาะ Admin และ Executive)
+  const chartsWrapper = document.getElementById("chartsMenuWrapper");
+  if (chartsWrapper) {
+    chartsWrapper.style.display = canViewStats ? "block" : "none";
+  }
 
   // Admin dropdown wrapper (เมนูจัดการ)
   const adminMenuWrapper = document.getElementById("adminMenuWrapper");
@@ -352,6 +363,7 @@ window.renderAdminUsersList = async function () {
         <td class="px-3 py-2 text-center">
           <select onchange="updateUserRole('${u.id}', this.value)" class="border rounded px-1.5 py-0.5 text-xs bg-slate-50">
             <option value="general_user" ${u.role === "general_user" ? "selected" : ""}>ผู้ใช้ทั่วไป</option>
+            <option value="executive" ${u.role === "executive" ? "selected" : ""}>ผู้บริหาร</option>
             <option value="technician" ${u.role === "technician" ? "selected" : ""}>ช่างซ่อมบำรุง</option>
             <option value="parcel_staff" ${u.role === "parcel_staff" ? "selected" : ""}>พัสดุ</option>
             <option value="admin" ${u.role === "admin" ? "selected" : ""}>ผู้ดูแลระบบ (Admin)</option>
@@ -424,5 +436,38 @@ document.addEventListener("click", (e) => {
   const wrapper = document.getElementById("adminMenuWrapper");
   if (wrapper && !wrapper.contains(e.target)) {
     window.closeAdminMenu();
+  }
+});
+
+
+// ============================================================
+// Charts Dropdown Menu (แถบเมนูกราฟสถิติ - สำหรับ Admin และ Executive)
+// ============================================================
+window.toggleChartsMenu = function (e) {
+  if (e) {
+    e.stopPropagation();
+  }
+  const menu = document.getElementById("chartsDropdownMenu");
+  if (!menu) return;
+  menu.classList.toggle("hidden");
+};
+
+window.closeChartsMenu = function () {
+  const menu = document.getElementById("chartsDropdownMenu");
+  if (menu) menu.classList.add("hidden");
+};
+
+window.selectChartTab = function (tab) {
+  window.closeChartsMenu();
+  if (typeof window.switchTab === "function") {
+    window.switchTab(tab);
+  }
+};
+
+// ปิด dropdown เมื่อคลิกนอก
+document.addEventListener("click", (e) => {
+  const chartsWrapper = document.getElementById("chartsMenuWrapper");
+  if (chartsWrapper && !chartsWrapper.contains(e.target)) {
+    window.closeChartsMenu();
   }
 });
