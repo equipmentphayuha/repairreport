@@ -405,7 +405,10 @@ window.updateUserRole = async function (uid, newRole) {
 // ============================================================
 // Admin Dropdown Menu (แถบเมนูจัดการ)
 // ============================================================
-window.toggleAdminMenu = function () {
+window.toggleAdminMenu = function (e) {
+  if (e) {
+    e.stopPropagation();
+  }
   const menu = document.getElementById("adminDropdownMenu");
   if (!menu) return;
   menu.classList.toggle("hidden");

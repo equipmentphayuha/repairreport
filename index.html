@@ -52,8 +52,8 @@
 
   <!-- Header -->
   <header class="bg-teal-700 text-white shadow-md sticky top-0 z-30 no-print">
-    <!-- แถวบน: โลโก้ + user badge -->
-    <div class="max-w-7xl mx-auto px-4 pt-2 pb-1 flex items-center justify-between gap-2">
+    <!-- แถวบน: โลโก้ + user badge & admin tools -->
+    <div class="max-w-7xl mx-auto px-4 pt-2 pb-1.5 flex items-center justify-between gap-3 relative">
       <!-- โลโก้ & ชื่อระบบ -->
       <div class="flex items-center space-x-2.5 shrink-0">
         <span class="text-xl">🏥</span>
@@ -68,14 +68,51 @@
         </div>
       </div>
 
-      <!-- User Badge (ขวาบน) -->
-      <div id="userProfileHeaderBadge" class="flex items-center gap-1.5 shrink-0">
-        <!-- โหลดข้อมูล Badge ผู้ใช้และปุ่ม Logout -->
+      <!-- ส่วนขวา: Admin Quick Menu + User Profile Badge -->
+      <div class="flex items-center gap-2 shrink-0">
+        <!-- Admin Tools Dropdown (ย้ายขึ้นมาข้างบน เพื่อไม่ให้ถูก overflow ซ่อน) -->
+        <div class="relative" id="adminMenuWrapper" style="display:none;">
+          <button onclick="toggleAdminMenu(event)" id="btn-admin-dropdown"
+            class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white shadow transition-all flex items-center gap-1.5 border border-rose-400/40">
+            <span>🛡️</span>
+            <span>จัดการระบบ</span>
+            <span class="text-[10px] opacity-80">▾</span>
+          </button>
+          
+          <!-- Dropdown Popover -->
+          <div id="adminDropdownMenu"
+            class="hidden absolute right-0 top-full mt-2 bg-white text-slate-800 rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50 min-w-[190px] animate-in fade-in zoom-in-95 duration-100">
+            <div class="px-3 py-2 bg-rose-50 border-b border-rose-100 text-[11px] font-bold text-rose-800 flex items-center gap-1">
+              <span>⚙️</span> เครื่องมือผู้ดูแลระบบ
+            </div>
+            <button onclick="openAuditModal(); closeAdminMenu()" id="btn-audit-logs"
+              class="w-full text-left px-3.5 py-2.5 text-xs font-medium hover:bg-slate-50 flex items-center gap-2.5 transition-colors">
+              <span class="text-base">📝</span>
+              <div>
+                <div class="font-bold text-slate-800">ประวัติ (Audit Log)</div>
+                <div class="text-[10px] text-slate-400">ตรวจสอบการเพิ่ม/แก้/ลบ</div>
+              </div>
+            </button>
+            <button onclick="openAdminUsersModal(); closeAdminMenu()" id="btn-tab-admin-users"
+              class="w-full text-left px-3.5 py-2.5 text-xs font-medium hover:bg-slate-50 flex items-center gap-2.5 transition-colors border-t border-slate-100">
+              <span class="text-base">👥</span>
+              <div>
+                <div class="font-bold text-slate-800">จัดการสมาชิก &amp; สิทธิ์</div>
+                <div class="text-[10px] text-slate-400">อนุมัติ / กำหนดระดับผู้ใช้</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- User Badge -->
+        <div id="userProfileHeaderBadge" class="flex items-center gap-1.5">
+          <!-- โหลดข้อมูล Badge ผู้ใช้และปุ่ม Logout -->
+        </div>
       </div>
     </div>
 
     <!-- แถวล่าง: แท็บนำทางหลัก -->
-    <div class="max-w-7xl mx-auto px-3 pb-1.5 flex items-center gap-1 overflow-x-auto scrollbar-none">
+    <div class="max-w-7xl mx-auto px-3 pb-1 flex items-center gap-1 overflow-x-auto scrollbar-none">
       <!-- แท็บหลัก -->
       <button onclick="switchTab('inventory')" id="btn-tab-inventory"
         class="nav-tab-btn px-3 py-1 rounded-t-md text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1 bg-teal-600/60 hover:bg-teal-500/80 border-b-2 border-transparent">
@@ -97,29 +134,6 @@
         class="nav-tab-btn px-3 py-1 rounded-t-md text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1 bg-teal-600/60 hover:bg-teal-500/80 border-b-2 border-transparent">
         <span>👷</span><span class="hidden sm:inline">เจ้าหน้าที่</span><span class="sm:hidden">ทีมงาน</span>
       </button>
-
-      <!-- ตัวคั่น -->
-      <div class="w-px h-5 bg-teal-500/50 mx-1 shrink-0 btn-admin-only" style="display:none;"></div>
-
-      <!-- Admin Dropdown -->
-      <div class="relative btn-admin-only" style="display:none;" id="adminMenuWrapper">
-        <button onclick="toggleAdminMenu()" id="btn-admin-dropdown"
-          class="px-3 py-1 rounded-t-md text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1 bg-rose-700/80 hover:bg-rose-600 border-b-2 border-transparent">
-          <span>🛡️</span><span>จัดการ</span><span class="text-[10px] ml-0.5">▾</span>
-        </button>
-        <!-- Dropdown Menu -->
-        <div id="adminDropdownMenu"
-          class="hidden absolute left-0 top-full mt-1 bg-white text-slate-800 rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50 min-w-[160px]">
-          <button onclick="openAuditModal(); closeAdminMenu()" id="btn-audit-logs"
-            class="btn-admin-only w-full text-left px-4 py-2.5 text-xs font-medium hover:bg-slate-50 flex items-center gap-2 transition-colors">
-            <span>📝</span> ประวัติ (Audit Log)
-          </button>
-          <button onclick="openAdminUsersModal(); closeAdminMenu()" id="btn-tab-admin-users"
-            class="btn-admin-only w-full text-left px-4 py-2.5 text-xs font-medium hover:bg-slate-50 flex items-center gap-2 transition-colors border-t border-slate-100">
-            <span>👥</span> จัดการสมาชิก
-          </button>
-        </div>
-      </div>
     </div>
   </header>
 
