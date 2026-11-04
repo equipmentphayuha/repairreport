@@ -175,6 +175,9 @@ export function initImportExport({ getActiveFields, getCurrentData, getFilteredD
         }
 
         try {
+            if (typeof window.ensureExportLibraries === 'function') {
+                await window.ensureExportLibraries(outputType === 'zip' ? ['xlsx', 'pptx'] : ['xlsx']);
+            }
             if (groupBy === 'none') {
                 // Option A: Single sheet with all selected items
                 const exportFormat = itemsToExportFormat(items, activeFields);
@@ -505,9 +508,12 @@ export function initImportExport({ getActiveFields, getCurrentData, getFilteredD
         }
     }
 
-    document.getElementById('importExcelFile').addEventListener('change', (e) => {
+    document.getElementById('importExcelFile').addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
+        if (typeof XLSX === 'undefined' && typeof window.ensureExportLibraries === 'function') {
+            await window.ensureExportLibraries(['xlsx']);
+        }
 
         document.getElementById('importFileName').textContent = file.name;
 

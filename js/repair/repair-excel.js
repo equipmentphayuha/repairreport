@@ -28,10 +28,13 @@ function _excelFormatBE(s) {
 }
 
 // ส่งออกข้อมูลตารางการซ่อมบำรุง
-function exportToExcel() {
+async function exportToExcel() {
   if (repairs.length === 0) {
     alert('ไม่มีข้อมูลสำหรับส่งออก');
     return;
+  }
+  if (typeof XLSX === 'undefined' && typeof window.ensureExportLibraries === 'function') {
+    await window.ensureExportLibraries(['xlsx']);
   }
 
   const today = new Date();
@@ -77,9 +80,12 @@ function exportToExcel() {
 }
 
 // นำเข้าข้อมูลประวัติงานซ่อมจาก Excel
-function handleExcelImport(event) {
+async function handleExcelImport(event) {
   const file = event.target.files[0];
   if (!file) return;
+  if (typeof XLSX === 'undefined' && typeof window.ensureExportLibraries === 'function') {
+    await window.ensureExportLibraries(['xlsx']);
+  }
 
   const reader = new FileReader();
   reader.onload = function(e) {

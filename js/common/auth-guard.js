@@ -22,17 +22,10 @@ function setupAuthUI() {
         if (window.App && window.App.setCurrentUser) {
           window.App.setCurrentUser(profile.name, profile.role);
         }
+        // 1. นำทางและเปิดหน้าจอทันที ไม่บล็อก UI
         hideGatekeeper();
         applyRolePermissions(profile);
         updateUserHeaderBadge(profile);
-        if (typeof window.triggerFirebaseSyncIfAuthorized === "function") {
-          window.triggerFirebaseSyncIfAuthorized();
-        }
-
-        // รีเฟรชการแสดงผลทะเบียนพัสดุให้กรองตามสิทธิ์ของผู้ใช้ที่เพิ่งเข้าสู่ระบบ
-        if (typeof window.renderParcelViews === "function") {
-          window.renderParcelViews();
-        }
 
         // หากเป็นผู้ใช้ทั่วไป (general_user) ให้นำทางไปที่แท็บใบส่งซ่อมทันที
         if (profile.role === "general_user") {
@@ -40,6 +33,16 @@ function setupAuthUI() {
             window.switchTab("repairs");
           }
         }
+
+        // 2. เรียกซิงค์ข้อมูลใน Background แบบ Non-blocking
+        setTimeout(() => {
+          if (typeof window.triggerFirebaseSyncIfAuthorized === "function") {
+            window.triggerFirebaseSyncIfAuthorized();
+          }
+          if (typeof window.renderParcelViews === "function") {
+            window.renderParcelViews();
+          }
+        }, 50);
       } else {
         window.currentUserProfile = null;
         showGatekeeper();
@@ -199,7 +202,11 @@ window.handleLoginSubmit = async function (e) {
     errBox.classList.add("hidden");
 
     if (typeof window.loginUser === "function") {
-      await window.loginUser(email, pass);
+      const res = await window.loginUser(email, pass);
+      if (res && res.profile) {
+        // ซ่อน Portal ทันทีที่ยืนยันตัวตนสำเร็จ
+        hideGatekeeper();
+      }
     } else {
       throw new Error("ฟังก์ชันเข้าสู่ระบบยังไม่พร้อม");
     }

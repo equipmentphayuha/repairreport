@@ -959,12 +959,20 @@ window.startFirebaseSync = async function() {
 
   if (typeof window.setSyncStatus === 'function') window.setSyncStatus("saving");
 
-  // ── ดึง equipments จาก Firebase ก่อน (source of truth) ──────────────────────
-  const cloudEquips = await window.fetchEquipmentsFromCloud();
-  equipments = cloudEquips;
-  saveEquipments(equipments);
-  updateEquipmentDatalist();
-  updateDivDatalist();
+  // ── ดึง equipments ใน Background (Non-blocking) เพื่อให้เข้าใช้งานหน้าแรกได้ทันที ──
+  setTimeout(async () => {
+    try {
+      const cloudEquips = await window.fetchEquipmentsFromCloud();
+      if (cloudEquips && cloudEquips.length > 0) {
+        equipments = cloudEquips;
+        saveEquipments(equipments);
+        updateEquipmentDatalist();
+        updateDivDatalist();
+      }
+    } catch (e) {
+      console.warn("Background equipments fetch notice:", e);
+    }
+  }, 100);
 
   // ── ฟัง staff realtime ───────────────────────────────────────────────────────
   if (typeof window.listenToStaffRealtime === 'function') {

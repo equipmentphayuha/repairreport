@@ -1487,10 +1487,16 @@ async function pullFromCloud(showNotice = true) {
     try {
         const snapshot = await getDocs(equipCollection);
         const cloudData = [];
+        let batchCount = 0;
         snapshot.forEach((docSnap) => {
             const item = docSnap.data();
             item.id = docSnap.id;
             cloudData.push(item);
+            batchCount++;
+            if (batchCount % 300 === 0) {
+                const totalEl = document.getElementById('totalItems');
+                if (totalEl) totalEl.innerText = `กำลังโหลด... ${batchCount} / ${snapshot.size}`;
+            }
         });
         // Merge: keep locally created items that haven't been pushed yet
         const pendingItems = currentData.filter(item => pendingChanges.has(item.id) || item.id.startsWith('local_'));
@@ -1503,7 +1509,6 @@ async function pullFromCloud(showNotice = true) {
         });
         currentData = mergedData;
         localStorage.setItem('hospital_equipments', JSON.stringify(currentData));
-        document.getElementById('totalItems').innerText = currentData.length;
         renderDataViews();
         if (showNotice) {
             alert(`✅ ดึงข้อมูลจาก Cloud เรียบร้อยแล้ว! (พบ ${cloudData.length} รายการ)`);
@@ -1637,9 +1642,11 @@ renderTableHeader();
 renderDataViews();
 updateSyncBadge();
 document.getElementById('totalItems').innerText = currentData.length;
-// If local data is completely empty on first run, auto-pull once
+// If local data is completely empty on first run, schedule pull in background
 if (isFirebaseConfigured && currentData.length === 0) {
-    pullFromCloud(false);
+    setTimeout(() => {
+        pullFromCloud(false);
+    }, 500);
 }
 // Initialize Import/Export module
 initImportExport({
@@ -1755,7 +1762,12 @@ if (exportParcelDashImgBtn) {
             return alert('กรุณาเปิดแดชบอร์ดก่อนส่งออก');
         }
         if (typeof html2canvas === 'undefined') {
-            return alert('ไม่พบไลบรารี html2canvas กรุณารีเฟรชหน้าเว็บแล้วลองใหม่อีกครั้ง');
+            if (typeof window.ensureExportLibraries === 'function') {
+                await window.ensureExportLibraries(['html2canvas']);
+            }
+            if (typeof html2canvas === 'undefined') {
+                return alert('ไม่สามารถโหลดไลบรารี html2canvas ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
+            }
         }
         const origHtml = exportParcelDashImgBtn.innerHTML;
         exportParcelDashImgBtn.disabled = true;
@@ -1787,13 +1799,18 @@ if (exportParcelDashImgBtn) {
 // ===== EXPORT PARCEL DASHBOARD TO PRESENTATION (PPTX) =====
 const exportParcelDashPptBtn = document.getElementById('exportParcelDashPptBtn');
 if (exportParcelDashPptBtn) {
-    exportParcelDashPptBtn.addEventListener('click', () => {
+    exportParcelDashPptBtn.addEventListener('click', async () => {
         const dashSection = document.getElementById('dashboardSection');
         if (!dashSection || dashSection.classList.contains('hidden')) {
             return alert('กรุณาเปิดแดชบอร์ดก่อนส่งออก');
         }
         if (typeof PptxGenJS === 'undefined') {
-            return alert('ไม่พบไลบรารี PptxGenJS กรุณารีเฟรชหน้าเว็บแล้วลองใหม่อีกครั้ง');
+            if (typeof window.ensureExportLibraries === 'function') {
+                await window.ensureExportLibraries(['pptx']);
+            }
+            if (typeof PptxGenJS === 'undefined') {
+                return alert('ไม่สามารถโหลดไลบรารี PptxGenJS ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
+            }
         }
         const origHtml = exportParcelDashPptBtn.innerHTML;
         exportParcelDashPptBtn.disabled = true;
