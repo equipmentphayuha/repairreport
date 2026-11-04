@@ -52,46 +52,72 @@
 
   <!-- Header -->
   <header class="bg-teal-700 text-white shadow-md sticky top-0 z-30 no-print">
-    <div class="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between gap-3 overflow-x-auto">
+    <!-- แถวบน: โลโก้ + user badge -->
+    <div class="max-w-7xl mx-auto px-4 pt-2 pb-1 flex items-center justify-between gap-2">
       <!-- โลโก้ & ชื่อระบบ -->
       <div class="flex items-center space-x-2.5 shrink-0">
-        <span class="text-2xl">🏥</span>
+        <span class="text-xl">🏥</span>
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="text-base font-bold leading-tight whitespace-nowrap">ระบบครุภัณฑ์ & ซ่อมบำรุง</h1>
-            <span id="syncStatusBadge" class="text-[11px] font-medium px-2 py-0.5 rounded-full border bg-slate-100 text-slate-600 border-slate-200 transition-all whitespace-nowrap">
+            <h1 class="text-sm font-bold leading-tight whitespace-nowrap">ระบบครุภัณฑ์ &amp; ซ่อมบำรุง</h1>
+            <span id="syncStatusBadge" class="text-[10px] font-medium px-1.5 py-0.5 rounded-full border bg-slate-100 text-slate-600 border-slate-200 transition-all whitespace-nowrap hidden sm:inline-block">
               ⏳ เชื่อมต่อ...
             </span>
           </div>
-          <p class="text-[11px] text-teal-100 leading-none mt-0.5">โรงพยาบาลพยุหะคีรี จ.นครสวรรค์</p>
+          <p class="text-[10px] text-teal-200 leading-none mt-0.5 hidden sm:block">โรงพยาบาลพยุหะคีรี จ.นครสวรรค์</p>
         </div>
       </div>
 
-      <!-- แถบปุ่มแท็บเมนู (บรรทัดเดียว ไม่ขึ้นบรรทัดใหม่) -->
-      <div class="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
-        <button onclick="switchTab('inventory')" id="btn-tab-inventory" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-800 transition-colors flex items-center gap-1">
-          <span>📦</span> ทะเบียนพัสดุ
+      <!-- User Badge (ขวาบน) -->
+      <div id="userProfileHeaderBadge" class="flex items-center gap-1.5 shrink-0">
+        <!-- โหลดข้อมูล Badge ผู้ใช้และปุ่ม Logout -->
+      </div>
+    </div>
+
+    <!-- แถวล่าง: แท็บนำทางหลัก -->
+    <div class="max-w-7xl mx-auto px-3 pb-1.5 flex items-center gap-1 overflow-x-auto scrollbar-none">
+      <!-- แท็บหลัก -->
+      <button onclick="switchTab('inventory')" id="btn-tab-inventory"
+        class="nav-tab-btn px-3 py-1 rounded-t-md text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1 bg-teal-600/60 hover:bg-teal-500/80 border-b-2 border-transparent">
+        <span>📦</span><span class="hidden sm:inline">ทะเบียนพัสดุ</span><span class="sm:hidden">พัสดุ</span>
+      </button>
+      <button onclick="switchTab('repairs')" id="btn-tab-repairs"
+        class="nav-tab-btn px-3 py-1 rounded-t-md text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1 bg-teal-600/60 hover:bg-teal-500/80 border-b-2 border-transparent">
+        <span>🔧</span><span class="hidden sm:inline">ใบส่งซ่อม</span><span class="sm:hidden">ซ่อม</span>
+      </button>
+      <button onclick="switchTab('charts')" id="btn-tab-charts"
+        class="nav-tab-btn px-3 py-1 rounded-t-md text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1 bg-teal-600/60 hover:bg-teal-500/80 border-b-2 border-transparent">
+        <span>📊</span><span class="hidden sm:inline">กราฟสถิติ</span><span class="sm:hidden">กราฟ</span>
+      </button>
+      <button onclick="switchTab('tables')" id="btn-tab-tables"
+        class="nav-tab-btn px-3 py-1 rounded-t-md text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1 bg-teal-600/60 hover:bg-teal-500/80 border-b-2 border-transparent">
+        <span>📑</span><span class="hidden sm:inline">แผนก/ครุภัณฑ์</span><span class="sm:hidden">แผนก</span>
+      </button>
+      <button onclick="switchTab('staff')" id="btn-tab-staff"
+        class="nav-tab-btn px-3 py-1 rounded-t-md text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1 bg-teal-600/60 hover:bg-teal-500/80 border-b-2 border-transparent">
+        <span>👷</span><span class="hidden sm:inline">เจ้าหน้าที่</span><span class="sm:hidden">ทีมงาน</span>
+      </button>
+
+      <!-- ตัวคั่น -->
+      <div class="w-px h-5 bg-teal-500/50 mx-1 shrink-0 btn-admin-only" style="display:none;"></div>
+
+      <!-- Admin Dropdown -->
+      <div class="relative btn-admin-only" style="display:none;" id="adminMenuWrapper">
+        <button onclick="toggleAdminMenu()" id="btn-admin-dropdown"
+          class="px-3 py-1 rounded-t-md text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1 bg-rose-700/80 hover:bg-rose-600 border-b-2 border-transparent">
+          <span>🛡️</span><span>จัดการ</span><span class="text-[10px] ml-0.5">▾</span>
         </button>
-        <button onclick="switchTab('repairs')" id="btn-tab-repairs" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-800 transition-colors flex items-center gap-1">
-          <span>🔧</span> ใบส่งซ่อม
-        </button>
-        <button onclick="switchTab('charts')" id="btn-tab-charts" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-teal-900 shadow transition-colors flex items-center gap-1">
-          <span>📊</span> กราฟสถิติ
-        </button>
-        <button onclick="switchTab('tables')" id="btn-tab-tables" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-800 transition-colors flex items-center gap-1">
-          <span>📑</span> แผนก/ครุภัณฑ์
-        </button>
-        <button onclick="switchTab('staff')" id="btn-tab-staff" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-800 transition-colors flex items-center gap-1">
-          <span>👷</span> เจ้าหน้าที่
-        </button>
-        <button onclick="openAuditModal()" id="btn-audit-logs" class="btn-admin-only px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-800/80 hover:bg-emerald-800 border border-emerald-500/40 transition-colors flex items-center gap-1 shadow-inner" style="display: none;" title="ดูประวัติการบันทึก/แก้ไข/ลบย้อนหลัง">
-          <span>📝</span> ประวัติ (Audit Log)
-        </button>
-        <button onclick="openAdminUsersModal()" id="btn-tab-admin-users" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-700 hover:bg-rose-800 text-white transition-colors flex items-center gap-1 shadow" style="display: none;">
-          <span>👥</span> จัดการสมาชิก
-        </button>
-        <div id="userProfileHeaderBadge" class="flex items-center gap-1.5 pl-2 border-l border-teal-600">
-          <!-- โหลดข้อมูล Badge ผู้ใช้และปุ่ม Logout -->
+        <!-- Dropdown Menu -->
+        <div id="adminDropdownMenu"
+          class="hidden absolute left-0 top-full mt-1 bg-white text-slate-800 rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50 min-w-[160px]">
+          <button onclick="openAuditModal(); closeAdminMenu()" id="btn-audit-logs"
+            class="btn-admin-only w-full text-left px-4 py-2.5 text-xs font-medium hover:bg-slate-50 flex items-center gap-2 transition-colors">
+            <span>📝</span> ประวัติ (Audit Log)
+          </button>
+          <button onclick="openAdminUsersModal(); closeAdminMenu()" id="btn-tab-admin-users"
+            class="btn-admin-only w-full text-left px-4 py-2.5 text-xs font-medium hover:bg-slate-50 flex items-center gap-2 transition-colors border-t border-slate-100">
+            <span>👥</span> จัดการสมาชิก
+          </button>
         </div>
       </div>
     </div>

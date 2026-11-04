@@ -100,20 +100,17 @@ function updateUserHeaderBadge(profile) {
 
 function applyRolePermissions(profile) {
   const role = profile.role || "general_user";
+  const isAdmin = role === "admin";
 
-  // ปุ่มเมนูสำหรับ Admin
-  const adminBtn = document.getElementById("btn-tab-admin-users");
-  const auditBtn = document.getElementById("btn-open-audit-log");
-  if (adminBtn) {
-    adminBtn.style.display = role === "admin" ? "inline-flex" : "none";
-  }
-  if (auditBtn) {
-    auditBtn.style.display = role === "admin" ? "inline-flex" : "none";
+  // Admin dropdown wrapper (เมนูจัดการ)
+  const adminMenuWrapper = document.getElementById("adminMenuWrapper");
+  if (adminMenuWrapper) {
+    adminMenuWrapper.style.display = isAdmin ? "block" : "none";
   }
 
   // ปุ่มลบข้อมูล (Delete buttons) - ซ่อนหากไม่ใช่ Admin
   document.querySelectorAll(".btn-admin-only").forEach((el) => {
-    el.style.display = role === "admin" ? "" : "none";
+    el.style.display = isAdmin ? "" : "none";
   });
 
   // ปุ่มแก้สถานะหรือปิดงานซ่อม
@@ -403,3 +400,26 @@ window.updateUserRole = async function (uid, newRole) {
   await window.updateUserStatus(uid, null, newRole);
   alert("อัปเดตสิทธิ์สำเร็จ");
 };
+
+
+// ============================================================
+// Admin Dropdown Menu (แถบเมนูจัดการ)
+// ============================================================
+window.toggleAdminMenu = function () {
+  const menu = document.getElementById("adminDropdownMenu");
+  if (!menu) return;
+  menu.classList.toggle("hidden");
+};
+
+window.closeAdminMenu = function () {
+  const menu = document.getElementById("adminDropdownMenu");
+  if (menu) menu.classList.add("hidden");
+};
+
+// ปิด dropdown เมื่อคลิกนอก
+document.addEventListener("click", (e) => {
+  const wrapper = document.getElementById("adminMenuWrapper");
+  if (wrapper && !wrapper.contains(e.target)) {
+    window.closeAdminMenu();
+  }
+});
