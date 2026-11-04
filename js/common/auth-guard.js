@@ -28,6 +28,13 @@ function setupAuthUI() {
         if (typeof window.triggerFirebaseSyncIfAuthorized === "function") {
           window.triggerFirebaseSyncIfAuthorized();
         }
+
+        // หากเป็นผู้ใช้ทั่วไป (general_user) ให้นำทางไปที่แท็บใบส่งซ่อมทันที
+        if (profile.role === "general_user") {
+          if (typeof window.switchTab === "function") {
+            window.switchTab("repairs");
+          }
+        }
       } else {
         window.currentUserProfile = null;
         showGatekeeper();
@@ -130,6 +137,12 @@ function applyRolePermissions(profile) {
   // ปุ่มลบข้อมูล (Delete buttons) - ซ่อนหากไม่ใช่ Admin
   document.querySelectorAll(".btn-admin-only").forEach((el) => {
     el.style.display = isAdmin ? "" : "none";
+  });
+
+  // ปุ่ม Import / Export - ซ่อนสำหรับผู้ใช้ทั่วไป (เปิดให้เฉพาะ Admin, Executive, Technician, Parcel Staff)
+  const canImportExport = role === "admin" || role === "executive" || role === "parcel_staff" || role === "technician";
+  document.querySelectorAll(".btn-import-export").forEach((el) => {
+    el.style.display = canImportExport ? "" : "none";
   });
 
   // ปุ่มแก้สถานะหรือปิดงานซ่อม

@@ -555,6 +555,15 @@ function renderTable() {
         }
       }
 
+      const canEditThis = canModifyRepair(r);
+      const actionButtons = `
+        <button onclick="previewWorkOrderSlip(${realIndex})" class="p-1 rounded hover:bg-slate-100 text-indigo-600 hover:text-indigo-800" title="พิมพ์ใบส่งซ่อม">
+          <span class="text-sm">🖨️</span>
+        </button>
+        ${canEditThis ? `<button onclick="editRepair(${realIndex})" class="text-xs text-teal-600 hover:text-teal-800 font-medium px-1">แก้ไข</button>` : ''}
+        ${canEditThis ? `<button onclick="deleteRepair(${realIndex})" class="text-xs text-rose-600 hover:text-rose-800 font-medium px-1">ลบ</button>` : ''}
+      `;
+
       // 1. เรนเดอร์ตารางบนคอมและแท็บเล็ต
       if (tbody) {
         const tr = document.createElement('tr');
@@ -583,11 +592,7 @@ function renderTable() {
           <td class="py-3 px-4 text-right font-medium text-slate-700">${Number(r.cost).toLocaleString()}</td>
           <td class="py-3 px-4 text-center">
             <div class="flex items-center justify-center gap-1.5">
-              <button onclick="previewWorkOrderSlip(${realIndex})" class="p-1 rounded hover:bg-slate-100 text-indigo-600 hover:text-indigo-800" title="พิมพ์ใบส่งซ่อม">
-                <span class="text-sm">🖨️</span>
-              </button>
-              <button onclick="editRepair(${realIndex})" class="text-xs text-teal-600 hover:text-teal-800 font-medium px-1">แก้ไข</button>
-              <button onclick="deleteRepair(${realIndex})" class="text-xs text-rose-600 hover:text-rose-800 font-medium px-1">ลบ</button>
+              ${actionButtons}
             </div>
           </td>
         `;
@@ -625,12 +630,13 @@ function renderTable() {
             <button onclick="previewWorkOrderSlip(${realIndex})" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
               <span>🖨️</span> พิมพ์
             </button>
+            ${canEditThis ? `
             <button onclick="editRepair(${realIndex})" class="bg-teal-50 hover:bg-teal-100 text-teal-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
               <span>✏️</span> แก้ไข
             </button>
             <button onclick="deleteRepair(${realIndex})" class="bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition">
               ลบ
-            </button>
+            </button>` : ''}
           </div>
         `;
         mobileContainer.appendChild(card);
@@ -669,6 +675,26 @@ function onStatusChange(statusVal) {
   }
 }
 
+// ฟังก์ชันตรวจสอบสิทธิ์การแก้ไข/ลบใบส่งซ่อม
+function canModifyRepair(r) {
+  const profile = window.currentUserProfile;
+  if (!profile) return true; // ถ้าไม่มีระบบ auth ทำงาน ให้ทำตามปกติ
+  const role = profile.role || 'general_user';
+  if (role === 'admin' || role === 'technician' || role === 'parcel_staff') {
+    return true;
+  }
+  // ถ้าเป็น general_user หรืออื่นๆ: แก้ไขได้เฉพาะใบที่ตนเองเป็นผู้แจ้งซ่อม หรือ แผนกตรงกับแผนกของตน
+  const currentUserName = (profile.name || '').trim().toLowerCase();
+  const currentUserDept = (profile.department || '').trim().toLowerCase();
+  const requester = (r.requester || '').trim().toLowerCase();
+  const div = (r.div || '').trim().toLowerCase();
+
+  const isOwner = requester && currentUserName && (requester.includes(currentUserName) || currentUserName.includes(requester));
+  const isSameDept = div && currentUserDept && (div === currentUserDept || div.includes(currentUserDept) || currentUserDept.includes(div));
+
+  return isOwner || isSameDept;
+}
+
 function openModal() {
   document.getElementById('repairModal').classList.remove('hidden');
   document.getElementById('modalTitle').innerText = 'บันทึกข้อมูลใบส่งซ่อม';
@@ -682,7 +708,16 @@ function openModal() {
   clearRepairDatePicker('formCompletedDate_d', 'formCompletedDate_m', 'formCompletedDate_y', 'formCompletedDate');
   
   document.getElementById('formAssignee').value = '';
-  document.getElementById('formRequester').value = '';
+
+  // เติมอัตโนมัติตามโปรไฟล์ผู้ใช้ปัจจุบัน
+  const profile = window.currentUserProfile;
+  if (profile) {
+    if (profile.name) document.getElementById('formRequester').value = profile.name;
+    if (profile.department) document.getElementById('formDept').value = profile.department;
+  } else {
+    document.getElementById('formRequester').value = '';
+  }
+
   renderTechnicianBadges();
 }
 
@@ -691,9 +726,14 @@ function closeModal() {
 }
 
 function editRepair(idx) {
+  const r = repairs[idx];
+  if (!r) return;
+  if (!canModifyRepair(r)) {
+    alert("⛔ ขออภัย: คุณสามารถแก้ไขได้เฉพาะใบส่งซ่อมของตนเองหรือแผนกของคุณเท่านั้น");
+    return;
+  }
   openModal();
   document.getElementById('modalTitle').innerText = 'แก้ไขข้อมูลใบส่งซ่อม';
-  const r = repairs[idx];
   document.getElementById('editIndex').value = idx;
   document.getElementById('formRepairNo').value = r.repairNo;
   setRepairDatePickerValue('formDate_d', 'formDate_m', 'formDate_y', 'formDate', r.date);
@@ -712,6 +752,11 @@ function editRepair(idx) {
 
 async function deleteRepair(idx) {
   const repairItem = repairs[idx];
+  if (!repairItem) return;
+  if (!canModifyRepair(repairItem)) {
+    alert("⛔ ขออภัย: คุณสามารถลบได้เฉพาะใบส่งซ่อมของตนเองหรือแผนกของคุณเท่านั้น");
+    return;
+  }
   const repairNo = repairItem.repairNo;
   if (!confirm(`คุณต้องการลบใบส่งซ่อม ${repairNo} หรือไม่?\n\n⚠️ ข้อมูลจะถูกลบออกจากฐานข้อมูลถาวร`)) return;
 

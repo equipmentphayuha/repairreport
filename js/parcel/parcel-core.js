@@ -339,6 +339,16 @@ function updateFilterDropdownOptions() {
 // ===== TABLE SORTING & RENDERING =====
 function getFilteredAndSortedData() {
     let list = [...currentData];
+
+    // ??????: ?? (general_user) ??????
+    const profile = window.currentUserProfile;
+    if (profile && profile.role === 'general_user' && profile.department) {
+        const userDept = profile.department.trim().toLowerCase();
+        list = list.filter(item => {
+            const itemDiv = (item.div || '').trim().toLowerCase();
+            return itemDiv === userDept || itemDiv.includes(userDept) || userDept.includes(itemDiv);
+        });
+    }
     // Filter by Div (แผนก)
     if (selectedFilterDiv) {
         list = list.filter(item => (item.div || '').trim() === selectedFilterDiv);
