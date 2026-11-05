@@ -112,10 +112,17 @@ function updateUserHeaderBadge(profile) {
 
   container.innerHTML = `
     <div class="flex items-center gap-2 text-xs">
-      <div class="text-right hidden sm:block">
-        <div class="font-bold text-white leading-tight">${profile.name}</div>
-        <div class="text-[10px] text-teal-200">${profile.department || "โรงพยาบาลพยุหะคีรี"}</div>
+      <div class="text-right hidden sm:block cursor-pointer hover:opacity-90" onclick="openSelfProfileModal()" title="คลิกเพื่อแก้ไขชื่อ / ขอย้ายแผนก">
+        <div class="font-bold text-white leading-tight flex items-center justify-end gap-1">
+          <span>${profile.name}</span>
+          <span class="text-[10px] bg-white/20 px-1 rounded hover:bg-white/30 text-teal-100">✏️</span>
+        </div>
+        <div class="text-[10px] text-teal-200">
+          ${profile.department || "โรงพยาบาลพยุหะคีรี"}
+          ${profile.pendingDepartment ? `<span class="text-amber-300 ml-1 font-bold animate-pulse" title="กำลังรอแอดมินอนุมัติย้ายไป: ${profile.pendingDepartment}">⏳ รอย้ายแผนก</span>` : ''}
+        </div>
       </div>
+      <button onclick="openSelfProfileModal()" class="sm:hidden bg-teal-800 hover:bg-teal-900 text-white p-1 rounded-lg text-xs" title="แก้ไขโปรไฟล์">👤</button>
       <span class="px-2 py-0.5 rounded-full border text-[11px] font-semibold ${roleBadge}">${roleTitle}</span>
       <button onclick="handleLogout()" title="ออกจากระบบ" class="bg-teal-800 hover:bg-rose-600 text-white p-1.5 rounded-lg text-xs transition-colors flex items-center gap-1">
         <span>🚪</span> <span class="hidden md:inline">ออก</span>
@@ -349,6 +356,8 @@ window.closeAdminUsersModal = function () {
   if (modal) modal.classList.add("hidden");
 };
 
+window._adminCachedUsers = [];
+
 window.renderAdminUsersList = async function () {
   const container = document.getElementById("adminUsersListContainer");
   if (!container) return;
@@ -356,6 +365,7 @@ window.renderAdminUsersList = async function () {
 
   if (typeof window.fetchAllUsers !== "function") return;
   const users = await window.fetchAllUsers();
+  window._adminCachedUsers = users;
 
   if (users.length === 0) {
     container.innerHTML = `<div class="p-8 text-center text-slate-400">ยังไม่มีผู้ใช้งานในระบบ</div>`;
@@ -364,20 +374,21 @@ window.renderAdminUsersList = async function () {
 
   let html = `
     <table class="min-w-full divide-y divide-slate-200 text-xs">
-      <thead class="bg-slate-100 font-semibold text-slate-700">
+      <thead class="bg-slate-100 font-semibold text-slate-700 sticky top-0 z-10">
         <tr>
-          <th class="px-3 py-2 text-left">ชื่อ-นามสกุล</th>
-          <th class="px-3 py-2 text-left">อีเมล</th>
-          <th class="px-3 py-2 text-left">แผนก</th>
-          <th class="px-3 py-2 text-center">บทบาท</th>
-          <th class="px-3 py-2 text-center">สถานะ</th>
-          <th class="px-3 py-2 text-center">การจัดการ</th>
+          <th class="px-3 py-2.5 text-left">ชื่อ-นามสกุล</th>
+          <th class="px-3 py-2.5 text-left">อีเมล</th>
+          <th class="px-3 py-2.5 text-left">รหัสผ่าน</th>
+          <th class="px-3 py-2.5 text-left">กลุ่มงาน / แผนก</th>
+          <th class="px-3 py-2.5 text-center">บทบาท</th>
+          <th class="px-3 py-2.5 text-center">สถานะ</th>
+          <th class="px-3 py-2.5 text-center">การจัดการ</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-100 bg-white">
   `;
 
-  users.forEach((u) => {
+  users.forEach((u, idx) => {
     let statusBadge = "bg-amber-100 text-amber-800";
     let statusText = "⏳ รออนุมัติ";
     if (u.status === "active") {
@@ -388,13 +399,44 @@ window.renderAdminUsersList = async function () {
       statusText = "⛔ ระงับสิทธิ์";
     }
 
+    // Password display helper
+    const userPass = u.password || u.initialPassword || '(เข้ารหัสไว้)';
+    const isMasked = userPass === '(เข้ารหัสไว้)';
+
+    // Department pending request indicator
+    let deptDisplay = u.department || "-";
+    if (u.pendingDepartment) {
+      deptDisplay = `
+        <div>
+          <span class="text-slate-800 font-medium">${u.department || "-"}</span>
+          <div class="mt-1 p-1 bg-amber-50 border border-amber-200 rounded text-[11px] text-amber-900">
+            <div>ขอย้ายไป: <strong>${u.pendingDepartment}</strong></div>
+            <div class="flex gap-1 mt-1">
+              <button onclick="handleApproveDept('${u.id}', '${u.pendingDepartment.replace(/'/g, "\\'")}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">อนุมัติย้าย</button>
+              <button onclick="handleRejectDept('${u.id}')" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-1.5 py-0.5 rounded text-[10px]">ปฏิเสธ</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     html += `
-      <tr class="hover:bg-slate-50">
-        <td class="px-3 py-2 font-medium text-slate-900">${u.name || "-"}</td>
-        <td class="px-3 py-2 text-slate-600">${u.email || "-"}</td>
-        <td class="px-3 py-2 text-slate-600">${u.department || "-"}</td>
-        <td class="px-3 py-2 text-center">
-          <select onchange="updateUserRole('${u.id}', this.value)" class="border rounded px-1.5 py-0.5 text-xs bg-slate-50">
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="px-3 py-2.5 font-bold text-slate-900">${u.name || "-"}</td>
+        <td class="px-3 py-2.5 text-slate-600 font-mono">${u.email || "-"}</td>
+        <td class="px-3 py-2.5 text-slate-700">
+          <div class="flex items-center gap-1.5">
+            <span id="pass_display_${idx}" class="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-[11px] select-all">${isMasked ? '••••••••' : '••••••••'}</span>
+            ${!isMasked ? `
+              <button onclick="toggleShowPassword('${idx}', '${userPass.replace(/'/g, "\\'")}')" id="pass_btn_${idx}" class="text-[11px] text-teal-700 hover:text-teal-900" title="แสดง/ซ่อนรหัสผ่าน">👁️</button>
+            ` : `
+              <span class="text-[10px] text-slate-400" title="ผู้ใช้ตั้งรหัสผ่านเองโดยตรง">🔒 ปลอดภัย</span>
+            `}
+          </div>
+        </td>
+        <td class="px-3 py-2.5 text-slate-600">${deptDisplay}</td>
+        <td class="px-3 py-2.5 text-center">
+          <select onchange="updateUserRole('${u.id}', this.value)" class="border rounded px-1.5 py-0.5 text-xs bg-slate-50 font-medium">
             <option value="general_user" ${u.role === "general_user" ? "selected" : ""}>ผู้ใช้ทั่วไป</option>
             <option value="executive" ${u.role === "executive" ? "selected" : ""}>ผู้บริหาร</option>
             <option value="technician" ${u.role === "technician" ? "selected" : ""}>ช่างซ่อมบำรุง</option>
@@ -402,10 +444,11 @@ window.renderAdminUsersList = async function () {
             <option value="admin" ${u.role === "admin" ? "selected" : ""}>ผู้ดูแลระบบ (Admin)</option>
           </select>
         </td>
-        <td class="px-3 py-2 text-center">
+        <td class="px-3 py-2.5 text-center">
           <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${statusBadge}">${statusText}</span>
         </td>
-        <td class="px-3 py-2 text-center space-x-1">
+        <td class="px-3 py-2.5 text-center whitespace-nowrap space-x-1">
+          <button onclick="openAdminEditUserModal('${u.id}')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2 py-1 rounded text-[11px] font-semibold" title="แก้ไขชื่อ, อีเมล, รหัสผ่าน, แผนก">✏️ แก้ไข</button>
           ${u.status === "pending_approval"
             ? `<button onclick="approveUser('${u.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded text-[11px] font-semibold">อนุมัติ</button>
                <button onclick="rejectUser('${u.id}')" class="bg-rose-50 hover:bg-rose-100 text-rose-600 px-2 py-1 rounded text-[11px]">ปฏิเสธ</button>`
@@ -421,6 +464,218 @@ window.renderAdminUsersList = async function () {
   html += `</tbody></table>`;
   container.innerHTML = html;
 };
+
+// สลับการดูรหัสผ่าน
+window.toggleShowPassword = function(idx, actualPass) {
+  const el = document.getElementById(`pass_display_${idx}`);
+  const btn = document.getElementById(`pass_btn_${idx}`);
+  if (!el) return;
+  if (el.textContent === '••••••••') {
+    el.textContent = actualPass;
+    if (btn) btn.textContent = '🙈';
+  } else {
+    el.textContent = '••••••••';
+    if (btn) btn.textContent = '👁️';
+  }
+};
+
+// แอดมินอนุมัติ / ปฏิเสธคำขอย้ายแผนก
+window.handleApproveDept = async function(uid, approvedDept) {
+  if (confirm(`ยืนยันการอนุมัติย้ายไปกลุ่มงาน/แผนก "${approvedDept}" ใช่หรือไม่?`)) {
+    if (typeof window.approveDepartmentChange === 'function') {
+      await window.approveDepartmentChange(uid, approvedDept);
+      alert('✅ อนุมัติย้ายแผนกเรียบร้อยแล้ว');
+      renderAdminUsersList();
+    }
+  }
+};
+
+window.handleRejectDept = async function(uid) {
+  if (confirm('ยืนยันปฏิเสธคำขอย้ายแผนกนี้?')) {
+    if (typeof window.rejectDepartmentChange === 'function') {
+      await window.rejectDepartmentChange(uid);
+      alert('ปฏิเสธคำขอย้ายแผนกแล้ว');
+      renderAdminUsersList();
+    }
+  }
+};
+
+// Modal แอดมินเพิ่มเจ้าหน้าที่ใหม่
+window.openAdminCreateUserModal = function() {
+  const m = document.getElementById('adminCreateUserModal');
+  if (m) {
+    document.getElementById('adminCreateUserForm')?.reset();
+    m.classList.remove('hidden');
+  }
+};
+window.closeAdminCreateUserModal = function() {
+  document.getElementById('adminCreateUserModal')?.classList.add('hidden');
+};
+
+window.handleAdminCreateUserSubmit = async function(e) {
+  e.preventDefault();
+  const name = document.getElementById('adminNewUserName').value.trim();
+  const email = document.getElementById('adminNewUserEmail').value.trim();
+  const password = document.getElementById('adminNewUserPassword').value.trim();
+  const department = document.getElementById('adminNewUserDept').value.trim();
+  const role = document.getElementById('adminNewUserRole').value;
+  const btn = document.getElementById('adminCreateUserSubmitBtn');
+
+  if (!name || !email || !password || !department) {
+    return alert('กรุณากรอกข้อมูลให้ครบทุกช่อง');
+  }
+
+  try {
+    btn.disabled = true;
+    btn.innerHTML = '⏳ กำลังบันทึก...';
+    if (typeof window.adminCreateUser === 'function') {
+      await window.adminCreateUser({ email, password, name, department, role });
+      alert(`✅ เพิ่มเจ้าหน้าที่ "${name}" เรียบร้อยแล้ว!`);
+      closeAdminCreateUserModal();
+      renderAdminUsersList();
+    }
+  } catch (err) {
+    console.error('Error creating user:', err);
+    alert('เกิดข้อผิดพลาดในการสร้างบัญชี: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '💾 บันทึกเจ้าหน้าที่';
+  }
+};
+
+// Modal แอดมินแก้ไขข้อมูลเจ้าหน้าที่ (ชื่อ, อีเมล, รหัสผ่าน, แผนก, บทบาท)
+window.openAdminEditUserModal = function(uid) {
+  const user = (window._adminCachedUsers || []).find(u => u.id === uid);
+  if (!user) return alert('ไม่พบข้อมูลผู้ใช้งาน');
+
+  document.getElementById('adminEditUserId').value = user.id;
+  document.getElementById('adminEditUserName').value = user.name || '';
+  document.getElementById('adminEditUserEmail').value = user.email || '';
+  document.getElementById('adminEditUserPassword').value = user.password || user.initialPassword || '';
+  document.getElementById('adminEditUserDept').value = user.department || '';
+  document.getElementById('adminEditUserRole').value = user.role || 'general_user';
+
+  document.getElementById('adminEditUserModal')?.classList.remove('hidden');
+};
+
+window.closeAdminEditUserModal = function() {
+  document.getElementById('adminEditUserModal')?.classList.add('hidden');
+};
+
+window.handleAdminEditUserSubmit = async function(e) {
+  e.preventDefault();
+  const uid = document.getElementById('adminEditUserId').value;
+  const name = document.getElementById('adminEditUserName').value.trim();
+  const email = document.getElementById('adminEditUserEmail').value.trim();
+  const password = document.getElementById('adminEditUserPassword').value.trim();
+  const department = document.getElementById('adminEditUserDept').value.trim();
+  const role = document.getElementById('adminEditUserRole').value;
+  const btn = document.getElementById('adminEditUserSubmitBtn');
+
+  try {
+    btn.disabled = true;
+    btn.innerHTML = '⏳ กำลังบันทึก...';
+    if (typeof window.updateUserData === 'function') {
+      const payload = { name, email, department, role };
+      if (password) {
+        payload.password = password;
+        payload.initialPassword = password;
+      }
+      await window.updateUserData(uid, payload);
+      alert('✅ บันทึกการแก้ไขข้อมูลเจ้าหน้าที่เรียบร้อยแล้ว');
+      closeAdminEditUserModal();
+      renderAdminUsersList();
+    }
+  } catch (err) {
+    console.error('Error editing user:', err);
+    alert('เกิดข้อผิดพลาด: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '💾 บันทึกการแก้ไข';
+  }
+};
+
+// Modal จัดการโปรไฟล์ของเจ้าหน้าที่ตนเอง (เปลี่ยนชื่อทันที / ขอย้ายแผนกรออนุมัติ)
+window.openSelfProfileModal = function() {
+  const profile = window.currentUserProfile;
+  if (!profile) return alert('กรุณาเข้าสู่ระบบก่อน');
+
+  document.getElementById('selfProfileName').value = profile.name || '';
+  document.getElementById('selfProfileCurrentDept').value = profile.department || 'ไม่ระบุ';
+  document.getElementById('selfProfileNewDept').value = '';
+
+  const pendingNotice = document.getElementById('selfProfilePendingDeptNotice');
+  const pendingName = document.getElementById('selfProfilePendingDeptName');
+  if (profile.pendingDepartment) {
+    pendingNotice?.classList.remove('hidden');
+    if (pendingName) pendingName.textContent = profile.pendingDepartment;
+  } else {
+    pendingNotice?.classList.add('hidden');
+  }
+
+  document.getElementById('selfProfileModal')?.classList.remove('hidden');
+};
+
+window.closeSelfProfileModal = function() {
+  document.getElementById('selfProfileModal')?.classList.add('hidden');
+};
+
+window.handleSelfProfileSubmit = async function(e) {
+  e.preventDefault();
+  const profile = window.currentUserProfile;
+  if (!profile || !profile.uid) return alert('ไม่พบข้อมูลโปรไฟล์');
+
+  const newName = document.getElementById('selfProfileName').value.trim();
+  const newDept = document.getElementById('selfProfileNewDept').value.trim();
+  const btn = document.getElementById('selfProfileSubmitBtn');
+
+  if (!newName) return alert('กรุณากรอกชื่อ-นามสกุล');
+
+  try {
+    btn.disabled = true;
+    btn.innerHTML = '⏳ กำลังบันทึก...';
+    let msg = [];
+
+    // 1. ถ้าชื่อเปลี่ยน -> อัปเดตและมีผลทันที
+    if (newName !== profile.name) {
+      if (typeof window.updateUserData === 'function') {
+        await window.updateUserData(profile.uid, { name: newName });
+        profile.name = newName;
+        window.currentUserProfile.name = newName;
+        if (window.App && window.App.setCurrentUser) {
+          window.App.setCurrentUser(newName, profile.role);
+        }
+        updateUserHeaderBadge(profile);
+        msg.push('✅ แก้ไขชื่อ-นามสกุล เรียบร้อยแล้ว (มีผลทันที)');
+      }
+    }
+
+    // 2. ถ้ากรอกขอย้ายแผนกใหม่ -> ส่งคำขอย้ายแผนก (รอแอดมินอนุมัติ)
+    if (newDept && newDept !== profile.department) {
+      if (typeof window.requestDepartmentChange === 'function') {
+        await window.requestDepartmentChange(profile.uid, newDept);
+        profile.pendingDepartment = newDept;
+        window.currentUserProfile.pendingDepartment = newDept;
+        updateUserHeaderBadge(profile);
+        msg.push(`⏳ ส่งคำขอย้ายไปแผนก "${newDept}" แล้ว (กำลังรอผู้ดูแลระบบอนุมัติ)`);
+      }
+    }
+
+    if (msg.length === 0) {
+      alert('ไม่มีข้อมูลที่เปลี่ยนแปลง');
+    } else {
+      alert(msg.join('\n'));
+    }
+    closeSelfProfileModal();
+  } catch (err) {
+    console.error('Self profile update error:', err);
+    alert('เกิดข้อผิดพลาด: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '💾 บันทึกข้อมูล';
+  }
+};
+
 
 window.approveUser = async function (uid) {
   if (confirm("ยืนยันการอนุมัติผู้ใช้งานท่านนี้?")) {

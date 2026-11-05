@@ -610,6 +610,110 @@ export async function updateUserStatus(userId, status, role = null) {
 /**
  * ล็อกเอาต์ออกจากระบบ
  */
+
+/**
+ * อัปเดตข้อมูลผู้ใช้งาน (ชื่อ, อีเมล, แผนก, รหัสผ่าน ฯลฯ)
+ */
+export async function updateUserData(userId, data) {
+  if (!db || !userId) return false;
+  try {
+    const docRef = doc(db, 'users', userId);
+    const updatePayload = {
+      ...data,
+      updatedAt: new Date().toISOString()
+    };
+    await updateDoc(docRef, updatePayload);
+    await logAuditAction({
+      action: 'update_user_data',
+      target: 'users',
+      targetId: userId,
+      details: `อัปเดตข้อมูลผู้ใช้: ${JSON.stringify(data)}`
+    });
+    return true;
+  } catch (err) {
+    console.error('updateUserData error:', err);
+    return false;
+  }
+}
+
+/**
+ * เจ้าหน้าที่ส่งคำขอย้าย/เปลี่ยนแผนก (รอแอดมินอนุมัติ)
+ */
+export async function requestDepartmentChange(userId, newDepartment) {
+  if (!db || !userId) return false;
+  try {
+    const docRef = doc(db, 'users', userId);
+    const updatePayload = {
+      pendingDepartment: newDepartment.trim(),
+      departmentRequestDate: new Date().toISOString()
+    };
+    await updateDoc(docRef, updatePayload);
+    await logAuditAction({
+      action: 'request_dept_change',
+      target: 'users',
+      targetId: userId,
+      details: `ขอเปลี่ยนแผนกเป็น: ${newDepartment}`
+    });
+    return true;
+  } catch (err) {
+    console.error('requestDepartmentChange error:', err);
+    return false;
+  }
+}
+
+/**
+ * แอดมินอนุมัติคำขอย้ายแผนก
+ */
+export async function approveDepartmentChange(userId, approvedDepartment) {
+  if (!db || !userId) return false;
+  try {
+    const docRef = doc(db, 'users', userId);
+    const updatePayload = {
+      department: approvedDepartment.trim(),
+      pendingDepartment: null,
+      departmentRequestDate: null,
+      updatedAt: new Date().toISOString()
+    };
+    await updateDoc(docRef, updatePayload);
+    await logAuditAction({
+      action: 'approve_dept_change',
+      target: 'users',
+      targetId: userId,
+      details: `อนุมัติย้ายแผนกเป็น: ${approvedDepartment}`
+    });
+    return true;
+  } catch (err) {
+    console.error('approveDepartmentChange error:', err);
+    return false;
+  }
+}
+
+/**
+ * แอดมินปฏิเสธคำขอย้ายแผนก
+ */
+export async function rejectDepartmentChange(userId) {
+  if (!db || !userId) return false;
+  try {
+    const docRef = doc(db, 'users', userId);
+    const updatePayload = {
+      pendingDepartment: null,
+      departmentRequestDate: null,
+      updatedAt: new Date().toISOString()
+    };
+    await updateDoc(docRef, updatePayload);
+    await logAuditAction({
+      action: 'reject_dept_change',
+      target: 'users',
+      targetId: userId,
+      details: 'ปฏิเสธคำขอย้ายแผนก'
+    });
+    return true;
+  } catch (err) {
+    console.error('rejectDepartmentChange error:', err);
+    return false;
+  }
+}
+
 export async function logoutUser() {
   if (!auth) return;
   await signOut(auth);
@@ -722,6 +826,11 @@ window.logoutUser = logoutUser;
 window.adminCreateUser = adminCreateUser;
 window.fetchAllUsers = fetchAllUsers;
 window.updateUserStatus = updateUserStatus;
+window.updateUserData = updateUserData;
+window.requestDepartmentChange = requestDepartmentChange;
+window.approveDepartmentChange = approveDepartmentChange;
+window.rejectDepartmentChange = rejectDepartmentChange;
+
 window.onAuthStateChangedHandler = onAuthStateChangedHandler;
 
 window.logAuditAction = logAuditAction;

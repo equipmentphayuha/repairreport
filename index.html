@@ -1921,11 +1921,16 @@
 
       <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-2 flex-wrap">
         <div class="text-xs text-slate-600">
-          รายการผู้ใช้งานทั้งหมดในระบบ Cloud Firestore
+          รายการผู้ใช้งานทั้งหมดในระบบ Cloud Firestore (สามารถดูรหัสผ่าน, แก้ไขชื่อ/อีเมล/สิทธิ์ ได้)
         </div>
-        <button onclick="renderAdminUsersList()" class="bg-teal-700 hover:bg-teal-800 text-white px-3 py-1 rounded-lg text-xs font-semibold transition flex items-center gap-1">
-          <span>🔄</span> รีเฟรชรายชื่อ
-        </button>
+        <div class="flex items-center gap-2">
+          <button onclick="openAdminCreateUserModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1 shadow-sm">
+            <span>➕</span> เพิ่มเจ้าหน้าที่
+          </button>
+          <button onclick="renderAdminUsersList()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1">
+            <span>🔄</span> รีเฟรช
+          </button>
+        </div>
       </div>
 
       <div class="overflow-x-auto flex-1 min-h-[300px]" id="adminUsersListContainer">
@@ -1935,6 +1940,147 @@
       <div class="bg-slate-50 px-4 py-2.5 border-t border-slate-200 flex justify-end shrink-0">
         <button type="button" onclick="closeAdminUsersModal()" class="px-4 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-semibold">ปิดหน้าต่าง</button>
       </div>
+    </div>
+  </div>
+
+  
+  <!-- ========================================================================= -->
+  <!-- MODAL: แอดมินเพิ่มเจ้าหน้าที่ใหม่ (Admin Create Staff)                        -->
+  <!-- ========================================================================= -->
+  <div id="adminCreateUserModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60] hidden no-print">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+      <div class="bg-gradient-to-r from-emerald-700 to-teal-800 text-white px-5 py-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">➕</span>
+          <h3 class="font-bold text-sm sm:text-base">เพิ่มเจ้าหน้าที่ใหม่เข้าระบบ</h3>
+        </div>
+        <button type="button" onclick="closeAdminCreateUserModal()" class="text-white/70 hover:text-white text-lg">✕</button>
+      </div>
+      <form id="adminCreateUserForm" onsubmit="handleAdminCreateUserSubmit(event)" class="p-5 space-y-3.5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อ - นามสกุล *</label>
+          <input type="text" id="adminNewUserName" required placeholder="เช่น สมชาย ใจดี" class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:outline-teal-600">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">อีเมลเข้าสู่ระบบ *</label>
+          <input type="email" id="adminNewUserEmail" required placeholder="user@phayuha.hospital" class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:outline-teal-600">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">รหัสผ่านเริ่มต้น *</label>
+          <input type="text" id="adminNewUserPassword" required placeholder="อย่างน้อย 6 ตัวอักษร" class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:outline-teal-600 font-mono">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">กลุ่มงาน / แผนก *</label>
+            <input type="text" id="adminNewUserDept" list="divDatalist" required placeholder="เลือกหรือพิมพ์แผนก" class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:outline-teal-600">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">บทบาท / สิทธิ์ *</label>
+            <select id="adminNewUserRole" class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:outline-teal-600 bg-white">
+              <option value="general_user" selected>ผู้ใช้ทั่วไป</option>
+              <option value="technician">ช่างซ่อมบำรุง</option>
+              <option value="parcel_staff">เจ้าหน้าที่พัสดุ</option>
+              <option value="executive">ผู้บริหาร</option>
+              <option value="admin">ผู้ดูแลระบบ (Admin)</option>
+            </select>
+          </div>
+        </div>
+        <div class="pt-3 border-t flex justify-end gap-2">
+          <button type="button" onclick="closeAdminCreateUserModal()" class="px-3 py-1.5 border border-slate-300 text-slate-600 hover:bg-slate-100 rounded-lg text-xs font-semibold">ยกเลิก</button>
+          <button type="submit" id="adminCreateUserSubmitBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-lg text-xs font-semibold shadow transition">💾 บันทึกเจ้าหน้าที่</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: แอดมินแก้ไขข้อมูลเจ้าหน้าที่ (Admin Edit Staff)                        -->
+  <!-- ========================================================================= -->
+  <div id="adminEditUserModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60] hidden no-print">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+      <div class="bg-gradient-to-r from-blue-700 to-indigo-800 text-white px-5 py-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">✏️</span>
+          <h3 class="font-bold text-sm sm:text-base">แก้ไขข้อมูลเจ้าหน้าที่</h3>
+        </div>
+        <button type="button" onclick="closeAdminEditUserModal()" class="text-white/70 hover:text-white text-lg">✕</button>
+      </div>
+      <form id="adminEditUserForm" onsubmit="handleAdminEditUserSubmit(event)" class="p-5 space-y-3.5">
+        <input type="hidden" id="adminEditUserId">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อ - นามสกุล *</label>
+          <input type="text" id="adminEditUserName" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:outline-teal-600">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">อีเมลเข้าสู่ระบบ *</label>
+          <input type="email" id="adminEditUserEmail" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:outline-teal-600">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">รหัสผ่าน (Password) *</label>
+          <div class="relative">
+            <input type="text" id="adminEditUserPassword" required class="w-full border border-slate-300 rounded-lg p-2 text-xs font-mono focus:outline-teal-600">
+          </div>
+          <p class="text-[10px] text-slate-400 mt-0.5">แอดมินสามารถดูและเปลี่ยนรหัสผ่านให้เจ้าหน้าที่ได้โดยตรง</p>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">กลุ่มงาน / แผนก *</label>
+            <input type="text" id="adminEditUserDept" list="divDatalist" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:outline-teal-600">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">บทบาท / สิทธิ์ *</label>
+            <select id="adminEditUserRole" class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:outline-teal-600 bg-white">
+              <option value="general_user">ผู้ใช้ทั่วไป</option>
+              <option value="technician">ช่างซ่อมบำรุง</option>
+              <option value="parcel_staff">เจ้าหน้าที่พัสดุ</option>
+              <option value="executive">ผู้บริหาร</option>
+              <option value="admin">ผู้ดูแลระบบ (Admin)</option>
+            </select>
+          </div>
+        </div>
+        <div class="pt-3 border-t flex justify-end gap-2">
+          <button type="button" onclick="closeAdminEditUserModal()" class="px-3 py-1.5 border border-slate-300 text-slate-600 hover:bg-slate-100 rounded-lg text-xs font-semibold">ยกเลิก</button>
+          <button type="submit" id="adminEditUserSubmitBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg text-xs font-semibold shadow transition">💾 บันทึกการแก้ไข</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: เจ้าหน้าที่แก้ไขโปรไฟล์ตนเอง (UserProfile & Dept Change Request)     -->
+  <!-- ========================================================================= -->
+  <div id="selfProfileModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden no-print">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+      <div class="bg-gradient-to-r from-teal-700 to-slate-800 text-white px-5 py-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">👤</span>
+          <h3 class="font-bold text-sm sm:text-base">แก้ไขข้อมูลส่วนตัวของฉัน</h3>
+        </div>
+        <button type="button" onclick="closeSelfProfileModal()" class="text-white/70 hover:text-white text-lg">✕</button>
+      </div>
+      <form id="selfProfileForm" onsubmit="handleSelfProfileSubmit(event)" class="p-5 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อ - นามสกุล (เปลี่ยนได้ทันที)</label>
+          <input type="text" id="selfProfileName" required class="w-full border border-slate-300 rounded-lg p-2.5 text-xs focus:outline-teal-600 font-medium">
+          <p class="text-[10px] text-emerald-600 mt-1">✨ เมื่อกดบันทึก ชื่อจะอัปเดตเปลี่ยนในระบบทันที</p>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">แผนกปัจจุบัน</label>
+          <input type="text" id="selfProfileCurrentDept" disabled class="w-full border border-slate-200 bg-slate-100 text-slate-600 rounded-lg p-2 text-xs cursor-not-allowed">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">ขอย้ายไปกลุ่มงาน / แผนกใหม่ (ต้องรอแอดมินอนุมัติ)</label>
+          <input type="text" id="selfProfileNewDept" list="divDatalist" placeholder="เลือกหรือพิมพ์แผนกใหม่ที่ต้องการย้าย" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs focus:outline-teal-600">
+          <div id="selfProfilePendingDeptNotice" class="hidden mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-[11px] flex items-center gap-1.5">
+            <span>⏳</span>
+            <span>มีคำขอย้ายไปแผนก: <strong id="selfProfilePendingDeptName"></strong> (กำลังรอแอดมินอนุมัติ)</span>
+          </div>
+        </div>
+        <div class="pt-3 border-t flex justify-end gap-2">
+          <button type="button" onclick="closeSelfProfileModal()" class="px-3.5 py-1.5 border border-slate-300 text-slate-600 hover:bg-slate-100 rounded-lg text-xs font-semibold">ปิด</button>
+          <button type="submit" id="selfProfileSubmitBtn" class="bg-teal-700 hover:bg-teal-800 text-white px-4 py-1.5 rounded-lg text-xs font-semibold shadow transition">💾 บันทึกข้อมูล</button>
+        </div>
+      </form>
     </div>
   </div>
 
