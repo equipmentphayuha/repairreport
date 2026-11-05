@@ -270,6 +270,14 @@
                 <div class="text-[10px] text-slate-400">ผลงานช่าง & สถิติผู้ส่งซ่อม</div>
               </div>
             </button>
+            <button onclick="selectChartTab('parcel_stats')"
+              class="w-full text-left px-3.5 py-2.5 text-xs font-medium hover:bg-teal-50/70 flex items-center gap-2.5 transition-colors border-t border-slate-100">
+              <span class="text-base">📦</span>
+              <div>
+                <div class="font-bold text-teal-800">4. สถิติ &amp; ค่าเสื่อมราคาครุภัณฑ์</div>
+                <div class="text-[10px] text-slate-400">ภาพรวมครุภัณฑ์, มูลค่า และสถานะค่าเสื่อม</div>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -960,194 +968,166 @@
 
     </section>
 
-  
-    <!-- ================= แท็บ 5: ทะเบียนพัสดุ / ครุภัณฑ์ (จากระบบคีย์พัสดุ) ================= -->
+    <!-- ================= แท็บใหม่: สถิติและค่าเสื่อมราคาครุภัณฑ์ (Parcel Statistics & Depreciation) ================= -->
+    <section id="section-parcel-stats" class="space-y-6 hidden">
+      <!-- Toolbar Header -->
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+            <span>📦</span> สถิติภาพรวมและค่าเสื่อมราคาครุภัณฑ์
+          </h2>
+          <p class="text-xs text-slate-500">วิเคราะห์การกระจายตัวของครุภัณฑ์ มูลค่าจัดซื้อ และมูลค่าสุทธิทางบัญชีตามมาตรฐาน</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" id="exportParcelDashImgBtn"
+            class="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm flex items-center gap-1.5 transition">
+            <span>📸</span> ส่งออกภาพ (PNG)
+          </button>
+          <button type="button" id="exportParcelDashPptBtn"
+            class="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm flex items-center gap-1.5 transition">
+            <span>📽️</span> สไลด์นำเสนอ PPTX
+          </button>
+        </div>
+      </div>
+
+      <!-- Dashboard Section Wrapper -->
+      <div id="dashboardSection" class="space-y-5">
+        <!-- 6 Top KPI Cards (Including Depreciation) -->
+        <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+          <div class="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 p-3.5 rounded-2xl shadow-sm">
+            <p class="text-xs font-semibold text-blue-700">📦 ครุภัณฑ์ทั้งหมด</p>
+            <p class="text-2xl font-extrabold text-blue-900 mt-1" id="dashTotalCount">0</p>
+            <p class="text-[11px] text-blue-600 mt-0.5">รายการในระบบ</p>
+          </div>
+          <div class="bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 p-3.5 rounded-2xl shadow-sm">
+            <p class="text-xs font-semibold text-slate-700">💰 มูลค่าจัดซื้อรวม</p>
+            <p class="text-2xl font-extrabold text-slate-900 mt-1" id="dashTotalValue">0</p>
+            <p class="text-[11px] text-slate-600 mt-0.5">บาท (ราคาตั้งต้น)</p>
+          </div>
+          <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-300 p-3.5 rounded-2xl shadow-sm ring-1 ring-emerald-200">
+            <p class="text-xs font-semibold text-emerald-700">💎 มูลค่าคงเหลือสุทธิ</p>
+            <p class="text-2xl font-extrabold text-emerald-800 mt-1" id="dashTotalBookValue">0</p>
+            <p class="text-[11px] text-emerald-600 mt-0.5">บาท (Net Book Value)</p>
+          </div>
+          <div class="bg-gradient-to-br from-rose-50 to-rose-100 border border-rose-300 p-3.5 rounded-2xl shadow-sm">
+            <p class="text-xs font-semibold text-rose-700">📉 ค่าเสื่อมสะสม</p>
+            <p class="text-2xl font-extrabold text-rose-800 mt-1" id="dashTotalAccDepr">0</p>
+            <p class="text-[11px] text-rose-600 mt-0.5">บาท (Acc. Depr)</p>
+          </div>
+          <div class="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 p-3.5 rounded-2xl shadow-sm">
+            <p class="text-xs font-semibold text-purple-700">🏷️ หมวดหมู่ประเภท</p>
+            <p class="text-2xl font-extrabold text-purple-900 mt-1" id="dashTypeCount">0</p>
+            <p class="text-[11px] text-purple-600 mt-0.5">ประเภทครุภัณฑ์</p>
+          </div>
+          <div class="bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 p-3.5 rounded-2xl shadow-sm">
+            <p class="text-xs font-semibold text-amber-700">🏢 กลุ่มงาน/แผนก</p>
+            <p class="text-2xl font-extrabold text-amber-900 mt-1" id="dashDivCount">0</p>
+            <p class="text-[11px] text-amber-600 mt-0.5">หน่วยงานที่ถือครอง</p>
+          </div>
+        </div>
+
+        <!-- Breakdown Grids: By Type & By Department -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-white border rounded-2xl p-4 shadow-sm flex flex-col">
+            <div class="flex justify-between items-center mb-2 pb-1.5 border-b">
+              <h3 class="text-xs sm:text-sm font-bold text-gray-800 flex items-center gap-1.5">
+                🏷️ <span>แยกตามประเภทครุภัณฑ์ (TYPE)</span>
+              </h3>
+              <span class="text-[11px] text-gray-500">จำนวน / มูลค่า</span>
+            </div>
+            <div id="dashTypeBreakdown" class="space-y-2 max-h-60 overflow-y-auto pr-1 text-xs"></div>
+          </div>
+
+          <div class="bg-white border rounded-2xl p-4 shadow-sm flex flex-col">
+            <div class="flex justify-between items-center mb-2 pb-1.5 border-b">
+              <h3 class="text-xs sm:text-sm font-bold text-gray-800 flex items-center gap-1.5">
+                🏢 <span>แยกตามกลุ่มงาน/แผนก (DIV)</span>
+              </h3>
+              <span class="text-[11px] text-gray-500">จำนวน / มูลค่า</span>
+            </div>
+            <div id="dashDivBreakdown" class="space-y-2 max-h-60 overflow-y-auto pr-1 text-xs"></div>
+          </div>
+        </div>
+
+        <!-- Visual Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="bg-white border rounded-2xl p-4 shadow-sm flex flex-col">
+            <div class="flex justify-between items-center mb-2 pb-1 border-b">
+              <h3 class="text-xs sm:text-sm font-bold text-gray-800 flex items-center gap-1.5">
+                🍩 <span>สัดส่วนตามประเภทครุภัณฑ์</span>
+              </h3>
+              <span class="text-[11px] text-gray-500">ชิ้น</span>
+            </div>
+            <div class="relative flex-1 min-h-[220px] flex items-center justify-center">
+              <canvas id="parcelTypeChart"></canvas>
+            </div>
+          </div>
+
+          <div class="bg-white border rounded-2xl p-4 shadow-sm flex flex-col">
+            <div class="flex justify-between items-center mb-2 pb-1 border-b">
+              <h3 class="text-xs sm:text-sm font-bold text-gray-800 flex items-center gap-1.5">
+                📊 <span>10 แผนกที่มีครุภัณฑ์มากที่สุด</span>
+              </h3>
+              <span class="text-[11px] text-gray-500">ชิ้น</span>
+            </div>
+            <div class="relative flex-1 min-h-[220px] flex items-center justify-center">
+              <canvas id="parcelDeptChart"></canvas>
+            </div>
+          </div>
+
+          <div class="bg-white border rounded-2xl p-4 shadow-sm flex flex-col">
+            <div class="flex justify-between items-center mb-2 pb-1 border-b">
+              <h3 class="text-xs sm:text-sm font-bold text-gray-800 flex items-center gap-1.5">
+                💎 <span>สถานะมูลค่า &amp; ค่าเสื่อมราคา</span>
+              </h3>
+              <span class="text-[11px] text-gray-500">บาท</span>
+            </div>
+            <div class="relative flex-1 min-h-[220px] flex items-center justify-center">
+              <canvas id="parcelDeprChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= แท็บ 5: ทะเบียนพัสดุ / ครุภัณฑ์ ================= -->
     <section id="section-inventory" class="space-y-6 hidden">
 
-    <!-- Top Form Card -->
-    <div class="max-w-7xl mx-auto bg-white p-3 sm:p-5 md:p-6 rounded-lg shadow-md mb-4 sm:mb-6">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4 border-b pb-3">
-            <h1 class="text-xl sm:text-2xl font-bold text-blue-700 flex items-center gap-2">
-                🏥 <span>ระบบบันทึกครุภัณฑ์โรงพยาบาล</span>
-            </h1>
-            <div class="flex flex-wrap gap-2 w-full sm:w-auto items-center">
-                <!-- Sync Controls -->
-                <button id="pullCloudBtn"
-                    class="bg-blue-50 border border-blue-300 text-blue-700 px-3 py-2 rounded-lg shadow-sm text-xs sm:text-sm hover:bg-blue-100 flex items-center justify-center gap-1 font-medium" title="ดึงข้อมูลล่าสุดจาก Cloud ลงมาเก็บในเครื่อง">
-                    📥 <span>ดึงจาก Cloud</span>
-                </button>
-                <button id="syncCloudBtn"
-                    class="bg-emerald-600 text-white px-3 sm:px-4 py-2 rounded-lg shadow text-xs sm:text-sm hover:bg-emerald-700 flex items-center justify-center gap-1 font-semibold transition-all" title="ส่งข้อมูลที่แก้ไขในเครื่องขึ้น Cloud">
-                    ☁️ <span>ส่งขึ้น Cloud</span> <span id="pendingSyncBadge" class="hidden bg-white text-emerald-800 text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ml-0.5">0</span>
-                </button>
-                <button id="cancelCloudSyncBtn"
-                    class="bg-red-50 text-red-600 border border-red-300 px-3 sm:px-4 py-2 rounded-lg shadow-sm text-xs sm:text-sm hover:bg-red-100 flex items-center justify-center gap-1 font-semibold transition-all" title="ยกเลิกการแก้ไขที่ยังไม่ได้ส่งขึ้น Cloud">
-                    ❌ <span>ยกเลิกการแก้ไข</span>
-                </button>
-                <button id="toggleDashboardBtn"
-                    class="flex-1 sm:flex-initial bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 sm:px-4 py-2 rounded-lg shadow text-xs sm:text-sm hover:from-blue-700 hover:to-indigo-700 flex items-center justify-center gap-1 font-semibold transition-all">
-                    📊 <span>สรุปแดชบอร์ด</span>
-                </button>
-                <button id="openConfigModalBtn"
-                    class="flex-1 sm:flex-initial bg-gray-100 border border-gray-300 text-gray-700 px-3 sm:px-4 py-2 rounded-lg shadow-sm text-xs sm:text-sm hover:bg-gray-200 flex items-center justify-center gap-1 font-medium">
-                    ⚙️ <span>ตั้งค่าฟิลด์</span>
-                </button>
+    <!-- Inventory Action Header Toolbar -->
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center text-xl shadow-inner font-bold">
+                📦
+            </div>
+            <div>
+                <h2 class="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+                    ทะเบียนครุภัณฑ์โรงพยาบาล
+                </h2>
+                <p class="text-xs text-slate-500">จัดการ ค้นหา สแกน QR และตรวจสอบประวัติครุภัณฑ์ทั้งหมดในระบบ</p>
             </div>
         </div>
-
-        <!-- Dashboard Summary Section (Collapsible) -->
-        <div id="dashboardSection" class="hidden mb-5 pt-1 border-b pb-5">
-            <!-- Dashboard Action Toolbar (Export Buttons) -->
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                <div class="flex items-center gap-2 text-xs font-bold text-slate-700">
-                    <span class="text-base">📈</span>
-                    <span>ภาพรวมสถิติและมูลค่าครุภัณฑ์โรงพยาบาล</span>
-                </div>
-                <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                    <button type="button" id="exportParcelDashImgBtn"
-                        class="flex-1 sm:flex-initial bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm flex items-center justify-center gap-1.5 transition">
-                        <span>📸</span> ส่งออกภาพ (PNG)
-                    </button>
-                    <button type="button" id="exportParcelDashPptBtn"
-                        class="flex-1 sm:flex-initial bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm flex items-center justify-center gap-1.5 transition">
-                        <span>📽️</span> สไลด์นำเสนอ PPTX
-                    </button>
-                </div>
-            </div>
-
-            <!-- 6 Top KPI Cards (Including Depreciation) -->
-            <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2.5 sm:gap-3 mb-4">
-                <div class="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 p-3 rounded-xl shadow-sm">
-                    <p class="text-xs font-semibold text-blue-700">📦 ครุภัณฑ์ทั้งหมด</p>
-                    <p class="text-xl sm:text-2xl font-extrabold text-blue-900 mt-1" id="dashTotalCount">0</p>
-                    <p class="text-[11px] text-blue-600 mt-0.5">รายการในระบบ</p>
-                </div>
-                <div class="bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 p-3 rounded-xl shadow-sm">
-                    <p class="text-xs font-semibold text-slate-700">💰 มูลค่าจัดซื้อรวม</p>
-                    <p class="text-xl sm:text-2xl font-extrabold text-slate-900 mt-1" id="dashTotalValue">0</p>
-                    <p class="text-[11px] text-slate-600 mt-0.5">บาท (ราคาตั้งต้น)</p>
-                </div>
-                <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-300 p-3 rounded-xl shadow-sm ring-1 ring-emerald-200">
-                    <p class="text-xs font-semibold text-emerald-700 flex items-center justify-between">
-                        <span>💎 มูลค่าคงเหลือสุทธิ</span>
-                    </p>
-                    <p class="text-xl sm:text-2xl font-extrabold text-emerald-800 mt-1" id="dashTotalBookValue">0</p>
-                    <p class="text-[11px] text-emerald-600 mt-0.5">บาท (Net Book Value)</p>
-                </div>
-                <div class="bg-gradient-to-br from-rose-50 to-rose-100 border border-rose-300 p-3 rounded-xl shadow-sm">
-                    <p class="text-xs font-semibold text-rose-700 flex items-center justify-between">
-                        <span>📉 ค่าเสื่อมสะสม</span>
-                    </p>
-                    <p class="text-xl sm:text-2xl font-extrabold text-rose-800 mt-1" id="dashTotalAccDepr">0</p>
-                    <p class="text-[11px] text-rose-600 mt-0.5">บาท (Acc. Depr)</p>
-                </div>
-                <div class="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 p-3 rounded-xl shadow-sm">
-                    <p class="text-xs font-semibold text-purple-700">🏷️ หมวดหมู่ประเภท</p>
-                    <p class="text-xl sm:text-2xl font-extrabold text-purple-900 mt-1" id="dashTypeCount">0</p>
-                    <p class="text-[11px] text-purple-600 mt-0.5">ประเภทครุภัณฑ์</p>
-                </div>
-                <div class="bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 p-3 rounded-xl shadow-sm">
-                    <p class="text-xs font-semibold text-amber-700">🏢 กลุ่มงาน/แผนก</p>
-                    <p class="text-xl sm:text-2xl font-extrabold text-amber-900 mt-1" id="dashDivCount">0</p>
-                    <p class="text-[11px] text-amber-600 mt-0.5">หน่วยงานที่ถือครอง</p>
-                </div>
-            </div>
-
-            <!-- Breakdown Grids: By Type & By Department -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Breakdown by TYPE -->
-                <div class="bg-gray-50 border rounded-xl p-3 sm:p-4 shadow-sm flex flex-col">
-                    <div class="flex justify-between items-center mb-2 pb-1 border-b">
-                        <h3 class="text-xs sm:text-sm font-bold text-gray-800 flex items-center gap-1.5">
-                            🏷️ <span>แยกตามประเภทครุภัณฑ์ (TYPE)</span>
-                        </h3>
-                        <span class="text-[11px] text-gray-500">จำนวน / มูลค่า</span>
-                    </div>
-                    <div id="dashTypeBreakdown" class="space-y-2 max-h-60 overflow-y-auto pr-1 text-xs">
-                        <!-- Dynamic Type Progress Bars -->
-                    </div>
-                </div>
-
-                <!-- Breakdown by DIV -->
-                <div class="bg-gray-50 border rounded-xl p-3 sm:p-4 shadow-sm flex flex-col">
-                    <div class="flex justify-between items-center mb-2 pb-1 border-b">
-                        <h3 class="text-xs sm:text-sm font-bold text-gray-800 flex items-center gap-1.5">
-                            🏢 <span>แยกตามกลุ่มงาน/แผนก (DIV)</span>
-                        </h3>
-                        <span class="text-[11px] text-gray-500">จำนวน / มูลค่า</span>
-                    </div>
-                    <div id="dashDivBreakdown" class="space-y-2 max-h-60 overflow-y-auto pr-1 text-xs">
-                        <!-- Dynamic Div Progress Bars -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Visual Charts Row -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
-                <!-- Chart 1: Donut Type Distribution -->
-                <div class="bg-white border rounded-xl p-3 sm:p-4 shadow-sm flex flex-col">
-                    <div class="flex justify-between items-center mb-2 pb-1 border-b">
-                        <h3 class="text-xs sm:text-sm font-bold text-gray-800 flex items-center gap-1.5">
-                            🍩 <span>สัดส่วนตามประเภทครุภัณฑ์</span>
-                        </h3>
-                        <span class="text-[11px] text-gray-500">ชิ้น</span>
-                    </div>
-                    <div class="relative flex-1 min-h-[220px] flex items-center justify-center">
-                        <canvas id="parcelTypeChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Chart 2: Bar Top Departments -->
-                <div class="bg-white border rounded-xl p-3 sm:p-4 shadow-sm flex flex-col">
-                    <div class="flex justify-between items-center mb-2 pb-1 border-b">
-                        <h3 class="text-xs sm:text-sm font-bold text-gray-800 flex items-center gap-1.5">
-                            📊 <span>10 แผนกที่มีครุภัณฑ์มากที่สุด</span>
-                        </h3>
-                        <span class="text-[11px] text-gray-500">ชิ้น</span>
-                    </div>
-                    <div class="relative flex-1 min-h-[220px] flex items-center justify-center">
-                        <canvas id="parcelDeptChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Chart 3: Doughnut Depreciation & Financial Status -->
-                <div class="bg-white border rounded-xl p-3 sm:p-4 shadow-sm flex flex-col">
-                    <div class="flex justify-between items-center mb-2 pb-1 border-b">
-                        <h3 class="text-xs sm:text-sm font-bold text-gray-800 flex items-center gap-1.5">
-                            💎 <span>สถานะมูลค่า & ค่าเสื่อมราคา</span>
-                        </h3>
-                        <span class="text-[11px] text-gray-500">บาท</span>
-                    </div>
-                    <div class="relative flex-1 min-h-[220px] flex items-center justify-center">
-                        <canvas id="parcelDeprChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Dynamic Form Key Data -->
-        <form id="equipmentForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <!-- Render Dynamic Fields Here -->
-        </form>
-
-        <div class="flex flex-col-reverse sm:flex-row gap-2 justify-end mt-4 pt-2 border-t" id="formBtns">
-                        <button type="button" id="repairCurrentBtn"
-                class="w-full sm:w-auto bg-teal-600 text-white px-4 py-2.5 sm:py-2 rounded-lg shadow hover:bg-teal-700 text-sm font-bold flex items-center justify-center gap-1.5 transition" title="เปิดใบส่งซ่อมโดยใช้ข้อมูลที่กรอกในฟอร์มนี้">
-                🔧 <span>ส่งซ่อมเครื่องนี้</span>
+        <div class="flex flex-wrap items-center gap-2">
+            <!-- Button to open parcel form modal -->
+            <button type="button" onclick="openParcelFormModal()"
+                class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-md hover:shadow-lg flex items-center gap-1.5 transition-all transform hover:-translate-y-0.5">
+                <span>➕</span> <span>เพิ่มครุภัณฑ์ใหม่</span>
             </button>
-            <button type="button" id="resetBtn"
-                class="w-full sm:w-auto bg-gray-400 text-white px-4 py-2.5 sm:py-2 rounded-lg shadow hover:bg-gray-500 text-sm font-medium">ล้างฟอร์ม</button>
-            <button type="button" id="cancelEditBtn"
-                class="w-full sm:w-auto bg-orange-500 text-white px-4 py-2.5 sm:py-2 rounded-lg shadow hover:bg-orange-600 hidden text-sm font-medium">ยกเลิกแก้ไข</button>
-            <button type="button" id="duplicateCurrentBtn"
-                class="w-full sm:w-auto bg-indigo-600 text-white px-4 py-2.5 sm:py-2 rounded-lg shadow hover:bg-indigo-700 hidden items-center justify-center gap-1 text-sm font-semibold" title="คัดลอกข้อมูลในฟอร์มนี้เพื่อสร้างเป็นชิ้นใหม่">📋 ทำซ้ำรายการนี้ (สร้างชิ้นใหม่)</button>
-            <button type="button" id="spreadCurrentBtn"
-                class="w-full sm:w-auto bg-amber-600 text-white px-4 py-2.5 sm:py-2 rounded-lg shadow hover:bg-amber-700 hidden items-center justify-center gap-1 text-sm font-semibold" title="กระจายข้อมูลแยก Noid ที่เป็นช่วงออกเป็นหลายชิ้น">🔄 กระจายข้อมูล (ช่วงเลข)</button>
-            <button type="button" id="deleteCurrentEditBtn"
-                class="w-full sm:w-auto bg-red-600 text-white px-4 py-2.5 sm:py-2 rounded-lg shadow hover:bg-red-700 hidden items-center justify-center gap-1 text-sm font-medium">🗑️ ลบรายการนี้</button>
-            <button type="submit" form="equipmentForm" id="submitBtn"
-                class="w-full sm:w-auto bg-green-600 text-white px-6 py-2.5 sm:py-2 rounded-lg shadow hover:bg-green-700 text-sm font-bold flex items-center justify-center gap-1">
-                💾 <span>บันทึกข้อมูล (Save)</span>
+            <!-- Sync Controls -->
+            <button id="pullCloudBtn"
+                class="bg-blue-50 border border-blue-300 text-blue-700 px-3 py-2 rounded-xl shadow-sm text-xs sm:text-sm hover:bg-blue-100 flex items-center justify-center gap-1 font-semibold transition" title="ดึงข้อมูลล่าสุดจาก Cloud ลงมาเก็บในเครื่อง">
+                📥 <span>ดึงจาก Cloud</span>
+            </button>
+            <button id="syncCloudBtn"
+                class="bg-teal-600 text-white px-3 sm:px-3.5 py-2 rounded-xl shadow text-xs sm:text-sm hover:bg-teal-700 flex items-center justify-center gap-1 font-semibold transition-all" title="ส่งข้อมูลที่แก้ไขในเครื่องขึ้น Cloud">
+                ☁️ <span>ส่งขึ้น Cloud</span> <span id="pendingSyncBadge" class="hidden bg-white text-emerald-800 text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ml-0.5">0</span>
+            </button>
+            <button id="cancelCloudSyncBtn"
+                class="bg-red-50 text-red-600 border border-red-300 px-2.5 py-2 rounded-xl shadow-sm text-xs hover:bg-red-100 flex items-center justify-center gap-1 font-semibold transition-all" title="ยกเลิกการแก้ไขที่ยังไม่ได้ส่งขึ้น Cloud">
+                ❌ <span>ยกเลิก</span>
+            </button>
+            <button id="openConfigModalBtn"
+                class="bg-slate-100 border border-slate-300 text-slate-700 px-3 py-2 rounded-xl shadow-sm text-xs sm:text-sm hover:bg-slate-200 flex items-center justify-center gap-1 font-medium transition">
+                ⚙️ <span>ตั้งค่าฟิลด์</span>
             </button>
         </div>
     </div>
@@ -1240,6 +1220,69 @@
                     <!-- Dynamic Data Rows -->
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- Modal for Parcel Data Entry & Editing -->
+    <div id="parcelFormModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-2 sm:p-4 z-50 no-print">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <!-- Modal Header -->
+            <div class="p-4 bg-gradient-to-r from-slate-800 via-teal-900 to-slate-900 text-white flex justify-between items-center shadow-sm">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-xl">📝</span>
+                    <div>
+                        <h3 id="parcelModalTitle" class="text-base font-bold tracking-tight text-white">บันทึกข้อมูลครุภัณฑ์</h3>
+                        <p class="text-[11px] text-teal-200/80">กรอกรายละเอียดครุภัณฑ์เพื่อบันทึกหรืออัปเดตข้อมูล</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeParcelFormModal()"
+                    class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-lg font-bold transition" title="ปิดหน้าต่าง">
+                    &times;
+                </button>
+            </div>
+
+            <!-- Modal Body (Form Fields) -->
+            <div class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
+                <form id="equipmentForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    <!-- Render Dynamic Fields Here -->
+                </form>
+            </div>
+
+            <!-- Modal Footer (Action Buttons) -->
+            <div class="p-3.5 sm:p-4 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row gap-2 justify-between items-center" id="formBtns">
+                <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                    <button type="button" id="deleteCurrentEditBtn"
+                        class="w-full sm:w-auto bg-rose-50 border border-rose-300 text-rose-700 px-3.5 py-2 rounded-xl shadow-sm hover:bg-rose-100 text-xs sm:text-sm font-semibold hidden items-center justify-center gap-1 transition">
+                        🗑️ ลบรายการนี้
+                    </button>
+                    <button type="button" id="duplicateCurrentBtn"
+                        class="w-full sm:w-auto bg-indigo-50 border border-indigo-300 text-indigo-700 px-3.5 py-2 rounded-xl shadow-sm hover:bg-indigo-100 text-xs sm:text-sm font-semibold hidden items-center justify-center gap-1 transition" title="คัดลอกข้อมูลในฟอร์มนี้เพื่อสร้างเป็นชิ้นใหม่">
+                        📋 ทำซ้ำ (สร้างใหม่)
+                    </button>
+                    <button type="button" id="spreadCurrentBtn"
+                        class="w-full sm:w-auto bg-amber-50 border border-amber-300 text-amber-800 px-3.5 py-2 rounded-xl shadow-sm hover:bg-amber-100 text-xs sm:text-sm font-semibold hidden items-center justify-center gap-1 transition" title="กระจายข้อมูลแยก Noid ที่เป็นช่วงออกเป็นหลายชิ้น">
+                        🔄 กระจายข้อมูล
+                    </button>
+                </div>
+                <div class="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
+                    <button type="button" id="repairCurrentBtn"
+                        class="w-full sm:w-auto bg-teal-600 text-white px-3.5 py-2 rounded-xl shadow hover:bg-teal-700 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition" title="เปิดใบส่งซ่อมโดยใช้ข้อมูลที่กรอกในฟอร์มนี้">
+                        🔧 <span>ส่งซ่อมเครื่องนี้</span>
+                    </button>
+                    <button type="button" id="resetBtn"
+                        class="w-full sm:w-auto bg-slate-200 hover:bg-slate-300 text-slate-700 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition">
+                        ล้างฟอร์ม
+                    </button>
+                    <button type="button" id="cancelEditBtn" onclick="closeParcelFormModal()"
+                        class="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-600 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition">
+                        ยกเลิก
+                    </button>
+                    <button type="submit" form="equipmentForm" id="submitBtn"
+                        class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl shadow-md text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition transform hover:-translate-y-0.5">
+                        💾 <span>บันทึกข้อมูล (Save)</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 

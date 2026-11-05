@@ -896,6 +896,27 @@ function renderDataViews() {
     }
 window.renderParcelViews = renderDataViews;
 }
+// ===== MODAL OPEN / CLOSE HANDLERS =====
+function openParcelFormModal(isEdit = false) {
+    const modal = document.getElementById('parcelFormModal');
+    const modalTitle = document.getElementById('parcelModalTitle');
+    if (modal) modal.classList.remove('hidden');
+    if (modalTitle) {
+        modalTitle.textContent = isEdit ? 'แก้ไขข้อมูลครุภัณฑ์' : 'บันทึกข้อมูลครุภัณฑ์ใหม่';
+    }
+}
+function closeParcelFormModal() {
+    const modal = document.getElementById('parcelFormModal');
+    if (modal) modal.classList.add('hidden');
+}
+window.openParcelFormModal = (isEdit = false) => {
+    if (!isEdit) {
+        setEditMode(false);
+    }
+    openParcelFormModal(isEdit);
+};
+window.closeParcelFormModal = closeParcelFormModal;
+
 // ===== EDIT & DELETE HANDLERS =====
 function setEditMode(on, item = null) {
     const submitBtn = document.getElementById('submitBtn');
@@ -903,12 +924,17 @@ function setEditMode(on, item = null) {
     const deleteBtn = document.getElementById('deleteCurrentEditBtn');
     const duplicateBtn = document.getElementById('duplicateCurrentBtn');
     const spreadBtn = document.getElementById('spreadCurrentBtn');
-    const formCard = document.getElementById('equipmentForm').closest('.bg-white');
+    const modal = document.getElementById('parcelFormModal');
+    const modalTitle = document.getElementById('parcelModalTitle');
+
     if (on && item) {
         editingId = item.id;
-        submitBtn.innerHTML = '💾 <span>อัปเดตข้อมูล (Update)</span>';
-        submitBtn.className = 'w-full sm:w-auto bg-blue-600 text-white px-6 py-2.5 sm:py-2 rounded-lg shadow hover:bg-blue-700 text-sm font-bold flex items-center justify-center gap-1';
-        cancelBtn.classList.remove('hidden');
+        if (submitBtn) {
+            submitBtn.innerHTML = '💾 <span>อัปเดตข้อมูล (Update)</span>';
+            submitBtn.className = 'w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl shadow-md text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition transform hover:-translate-y-0.5';
+        }
+        if (modalTitle) modalTitle.textContent = 'แก้ไขข้อมูลครุภัณฑ์: ' + (item.noid || item.name || '');
+        if (cancelBtn) cancelBtn.classList.remove('hidden');
         if (duplicateBtn) {
             duplicateBtn.classList.remove('hidden');
             duplicateBtn.classList.add('flex');
@@ -917,21 +943,25 @@ function setEditMode(on, item = null) {
             spreadBtn.classList.remove('hidden');
             spreadBtn.classList.add('flex');
         }
-        deleteBtn.classList.remove('hidden');
-        deleteBtn.classList.add('flex');
-        formCard.classList.add('ring-2', 'ring-blue-400');
+        if (deleteBtn) {
+            deleteBtn.classList.remove('hidden');
+            deleteBtn.classList.add('flex');
+        }
         activeFields.forEach(f => {
             const el = document.getElementById(f.key);
             if (!el) return;
             const val = item[f.key] !== undefined ? item[f.key] : (f.key === 'tmoney' && item['money'] !== undefined ? item['money'] : '');
             el.value = val;
         });
-        formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (modal) modal.classList.remove('hidden');
     } else {
         editingId = null;
-        submitBtn.innerHTML = '💾 <span>บันทึกข้อมูล (Save)</span>';
-        submitBtn.className = 'w-full sm:w-auto bg-green-600 text-white px-6 py-2.5 sm:py-2 rounded-lg shadow hover:bg-green-700 text-sm font-bold flex items-center justify-center gap-1';
-        cancelBtn.classList.add('hidden');
+        if (submitBtn) {
+            submitBtn.innerHTML = '💾 <span>บันทึกข้อมูล (Save)</span>';
+            submitBtn.className = 'w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl shadow-md text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition transform hover:-translate-y-0.5';
+        }
+        if (modalTitle) modalTitle.textContent = 'บันทึกข้อมูลครุภัณฑ์ใหม่';
+        if (cancelBtn) cancelBtn.classList.add('hidden');
         if (duplicateBtn) {
             duplicateBtn.classList.add('hidden');
             duplicateBtn.classList.remove('flex');
@@ -940,10 +970,12 @@ function setEditMode(on, item = null) {
             spreadBtn.classList.add('hidden');
             spreadBtn.classList.remove('flex');
         }
-        deleteBtn.classList.add('hidden');
-        deleteBtn.classList.remove('flex');
-        formCard.classList.remove('ring-2', 'ring-blue-400');
-        document.getElementById('equipmentForm').reset();
+        if (deleteBtn) {
+            deleteBtn.classList.add('hidden');
+            deleteBtn.classList.remove('flex');
+        }
+        const formEl = document.getElementById('equipmentForm');
+        if (formEl) formEl.reset();
         renderDataViews();
     }
 }
@@ -1143,6 +1175,7 @@ document.getElementById('equipmentForm').addEventListener('submit', (e) => {
         }
         alert('✅ บันทึกการแก้ไขลงในเครื่องเรียบร้อยแล้ว!\n(สามารถกดปุ่ม "☁️ ส่งขึ้น Cloud" เมื่อต้องการอัปเดต)');
         setEditMode(false);
+        closeParcelFormModal();
     } else {
         data.createdAt = new Date().toISOString();
         data.id = 'local_' + Date.now();
@@ -1153,6 +1186,7 @@ document.getElementById('equipmentForm').addEventListener('submit', (e) => {
         renderDataViews();
         alert('✅ บันทึกรายการใหม่ลงในเครื่องเรียบร้อยแล้ว!\n(สามารถกดปุ่ม "☁️ ส่งขึ้น Cloud" เมื่อต้องการอัปเดต)');
         document.getElementById('equipmentForm').reset();
+        closeParcelFormModal();
     }
 });
 // Delete All

@@ -276,6 +276,7 @@ function switchTab(tab) {
   const secRepairs    = document.getElementById('section-repairs');
   const secStaff      = document.getElementById('section-staff');
   const secInventory  = document.getElementById('section-inventory');
+  const secParcelStats = document.getElementById('section-parcel-stats');
 
   const btnCharts     = document.getElementById('btn-tab-charts');
   const btnTables     = document.getElementById('btn-tab-tables');
@@ -283,7 +284,7 @@ function switchTab(tab) {
   const btnStaff      = document.getElementById('btn-tab-staff');
   const btnInventory  = document.getElementById('btn-tab-inventory');
 
-  [secCharts, secTables, secRepairs, secStaff, secInventory].forEach(s => { if (s) s.classList.add('hidden'); });
+  [secCharts, secTables, secRepairs, secStaff, secInventory, secParcelStats].forEach(s => { if (s) s.classList.add('hidden'); });
 
   const activeBtnClass   = "px-2.5 py-1 rounded-lg text-xs font-semibold bg-teal-900 text-white shadow-md transition-all flex items-center gap-1 border border-teal-400";
   const inactiveBtnClass = "px-2.5 py-1 rounded-lg text-xs font-semibold bg-teal-600/70 text-teal-100 hover:bg-teal-800 hover:text-white transition-all flex items-center gap-1 border border-teal-500/30";
@@ -297,17 +298,13 @@ function switchTab(tab) {
   if (tab === 'inventory') {
     if (secInventory) secInventory.classList.remove('hidden');
     if (btnInventory) btnInventory.className = activeBtnClass;
-
-    // ถ้าผู้ใช้มีสิทธิ์ระดับ 'executive' (ผู้บริหาร) ให้กางแดชบอร์ดสรุปสถิติทันที
-    const profile = window.currentUserProfile;
-    if (profile && (profile.role === 'executive' || profile.role === 'admin')) {
-      if (typeof window.openParcelDashboardSection === 'function') {
-        window.openParcelDashboardSection();
-      }
-    }
-
-    if (typeof window.renderParcelDashboard === 'function') window.renderParcelDashboard();
     if (typeof window.renderParcelViews === 'function') window.renderParcelViews();
+  } else if (tab === 'parcel_stats') {
+    if (secParcelStats) secParcelStats.classList.remove('hidden');
+    if (btnCharts) {
+      btnCharts.className = "px-2.5 py-1 rounded-lg text-xs font-semibold bg-teal-950 text-white shadow-md ring-2 ring-teal-300 transition-all flex items-center gap-1.5 border border-teal-400";
+    }
+    if (typeof window.renderParcelDashboard === 'function') window.renderParcelDashboard();
   } else if (tab === 'charts') {
     if (secCharts) secCharts.classList.remove('hidden');
     if (btnCharts) {
