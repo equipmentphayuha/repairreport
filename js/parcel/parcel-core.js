@@ -640,29 +640,138 @@ let parcelDeptChartInstance = null;
 let parcelDeprChartInstance = null;
 let parcelDashboardDataCache = null;
 
+// Cross-filter state for dashboard
+let dashFilterDiv = '';
+let dashFilterType = '';
+
+function setDashFilter(type, value) {
+    if (type === 'div') {
+        dashFilterDiv = (dashFilterDiv === value) ? '' : value;
+    } else if (type === 'type') {
+        dashFilterType = (dashFilterType === value) ? '' : value;
+    }
+    renderParcelDashboard();
+}
+window.setDashFilter = setDashFilter;
+
+function clearParcelDashFilters() {
+    dashFilterDiv = '';
+    dashFilterType = '';
+    renderParcelDashboard();
+}
+window.clearParcelDashFilters = clearParcelDashFilters;
+
+function goToInventoryWithDashFilters() {
+    if (dashFilterDiv) {
+        selectedFilterDiv = dashFilterDiv;
+        if (filterDivSelect) filterDivSelect.value = dashFilterDiv;
+    }
+    if (dashFilterType) {
+        selectedFilterType = dashFilterType;
+        if (filterTypeSelect) filterTypeSelect.value = dashFilterType;
+    }
+    if (typeof window.switchTab === 'function') {
+        window.switchTab('inventory');
+    }
+}
+window.goToInventoryWithDashFilters = goToInventoryWithDashFilters;
+
+function updateDashFilterBar(targetCount, totalBaseCount) {
+    const bar = document.getElementById('parcelDashActiveFilterBar');
+    const tagsContainer = document.getElementById('parcelDashFilterTags');
+    const resetBtn = document.getElementById('parcelDashResetFilterBtn');
+    if (!tagsContainer) return;
+
+    const hasFilter = Boolean(dashFilterDiv || dashFilterType);
+    if (resetBtn) {
+        if (hasFilter) resetBtn.classList.remove('hidden');
+        else resetBtn.classList.add('hidden');
+    }
+
+    if (!hasFilter) {
+        tagsContainer.innerHTML = `
+            <span class="bg-teal-500/20 text-teal-200 border border-teal-500/30 text-xs px-2.5 py-1 rounded-lg font-medium flex items-center gap-1">
+                <span>🏢</span> ทั้งโรงพยาบาล (ทุกกลุ่มงาน &amp; ทุกประเภท - รวม ${totalBaseCount.toLocaleString()} รายการ)
+            </span>
+        `;
+    } else {
+        let tagsHtml = '';
+        if (dashFilterDiv) {
+            tagsHtml += `
+                <span class="bg-blue-500/30 text-blue-200 border border-blue-400/50 text-xs px-2.5 py-1 rounded-lg font-semibold flex items-center gap-1.5 shadow-sm">
+                    <span>🏢</span> แผนก: <strong class="text-white">${dashFilterDiv}</strong>
+                    <button type="button" onclick="window.setDashFilter('div', '${dashFilterDiv.replace(/'/g, "\\'")}')" class="text-blue-300 hover:text-white font-bold ml-1 text-sm leading-none">&times;</button>
+                </span>
+            `;
+        }
+        if (dashFilterType) {
+            tagsHtml += `
+                <span class="bg-purple-500/30 text-purple-200 border border-purple-400/50 text-xs px-2.5 py-1 rounded-lg font-semibold flex items-center gap-1.5 shadow-sm">
+                    <span>🏷️</span> ประเภท: <strong class="text-white">${dashFilterType}</strong>
+                    <button type="button" onclick="window.setDashFilter('type', '${dashFilterType.replace(/'/g, "\\'")}')" class="text-purple-300 hover:text-white font-bold ml-1 text-sm leading-none">&times;</button>
+                </span>
+            `;
+        }
+        tagsHtml += `
+            <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs px-2.5 py-1 rounded-lg font-bold">
+                ✓ พบ ${targetCount.toLocaleString()} รายการ (${Math.round((targetCount / (totalBaseCount || 1)) * 100)}%)
+            </span>
+        `;
+        tagsContainer.innerHTML = tagsHtml;
+    }
+}
+
 function renderParcelDashboard() {
     const dashSection = document.getElementById('dashboardSection');
     if (!dashSection) return;
 
-    // ตรวจสอบสิทธิ์ผู้ใช้งาน: หากเป็น general_user ให้คำนวณและแสดงผลเฉพาะกลุ่มงาน/แผนกของตนเอง
+    // ตรวจสอบสิทธิ์ผู้ใช้งาน: หากเป็น general_user ให้จำกัดกลุ่มงานเริ่มต้น
     const profile = window.currentUserProfile;
     const isGeneralUser = profile && profile.role === 'general_user' && profile.department;
-    let targetDataset = currentData;
+    let baseDataset = currentData;
     if (isGeneralUser) {
         const cleanUserDept = profile.department.replace(/^(กลุ่มงาน|งาน|ฝ่าย)/, '').trim().toLowerCase();
-        targetDataset = currentData.filter(item => {
+        baseDataset = currentData.filter(item => {
             const itemDiv = (item.div || '').replace(/^(กลุ่มงาน|งาน|ฝ่าย)/, '').trim().toLowerCase();
             return itemDiv === cleanUserDept || itemDiv.includes(cleanUserDept) || cleanUserDept.includes(itemDiv);
         });
     }
 
-    const totalCount = targetDataset.length;
+    // คำนวณ Distribution รวมของ Base dataset (เพื่อแสดงในแถบสัดส่วนและคงรายการทั้งหมดไว้ให้คลิกเลือกได้)
+    const baseTypeMap = {};
+    const baseDivMap = {};
+    baseDataset.forEach(item => {
+        const t = (item.type || 'ไม่ระบุประเภท').trim();
+        if (!baseTypeMap[t]) baseTypeMap[t] = { count: 0, value: 0 };
+        baseTypeMap[t].count++;
+        const p = Number(String(item.perUnit || '').replace(/,/g, '')) || 0;
+        baseTypeMap[t].value += p;
+
+        const d = (item.div || 'ไม่ระบุแผนก').trim();
+        if (!baseDivMap[d]) baseDivMap[d] = { count: 0, value: 0 };
+        baseDivMap[d].count++;
+        baseDivMap[d].value += p;
+    });
+
+    // กรอง Dataset ตามตัวเลือกแดชบอร์ด (Interactive Cross Filter)
+    let filteredDataset = baseDataset;
+    if (dashFilterDiv) {
+        filteredDataset = filteredDataset.filter(i => (i.div || 'ไม่ระบุแผนก').trim() === dashFilterDiv);
+    }
+    if (dashFilterType) {
+        filteredDataset = filteredDataset.filter(i => (i.type || 'ไม่ระบุประเภท').trim() === dashFilterType);
+    }
+
+    // อัปเดต Filter Bar
+    updateDashFilterBar(filteredDataset.length, baseDataset.length);
+
+    const totalCount = filteredDataset.length;
     let totalValue = 0;
     let totalBookValue = 0;
     let totalAccDepr = 0;
     const typeMap = {};
     const divMap = {};
-    targetDataset.forEach(item => {
+    filteredDataset.forEach(item => {
         // Price
         const cleanPriceStr = String(item.perUnit || '').replace(/,/g, '');
         const price = Number(cleanPriceStr) || 0;
@@ -684,6 +793,7 @@ function renderParcelDashboard() {
         divMap[d].count++;
         divMap[d].value += price;
     });
+
     const elTotalCount = document.getElementById('dashTotalCount');
     const elTotalValue = document.getElementById('dashTotalValue');
     const elTotalBookValue = document.getElementById('dashTotalBookValue');
@@ -696,63 +806,81 @@ function renderParcelDashboard() {
     if (elTotalAccDepr) elTotalAccDepr.textContent = totalAccDepr.toLocaleString();
     if (elTypeCount) elTypeCount.textContent = Object.keys(typeMap).length.toLocaleString();
     if (elDivCount) elDivCount.textContent = Object.keys(divMap).length.toLocaleString();
+
     // Render Type Breakdown
     const typeContainer = document.getElementById('dashTypeBreakdown');
     if (typeContainer) {
-        const sortedTypes = Object.entries(typeMap).sort((a, b) => b[1].count - a[1].count);
+        // ใช้ baseTypeMap ในการเรียงหัวข้อ เพื่อให้ผู้ใช้สามารถคลิกสลับประเภทอื่นได้เสมอ
+        const sortedTypes = Object.entries(baseTypeMap).sort((a, b) => b[1].count - a[1].count);
         if (sortedTypes.length === 0) {
             typeContainer.innerHTML = '<p class="text-gray-400 py-3 text-center">ไม่มีข้อมูล</p>';
         } else {
-            typeContainer.innerHTML = sortedTypes.map(([name, data]) => {
-                const pct = totalCount > 0 ? Math.round((data.count / totalCount) * 100) : 0;
-                const isSelected = selectedFilterType === name;
+            typeContainer.innerHTML = sortedTypes.map(([name, baseData]) => {
+                // ข้อมูลปัจจุบันภายใต้เงื่อนไข filter
+                const activeData = typeMap[name] || { count: 0, value: 0 };
+                const pct = totalCount > 0 ? Math.round((activeData.count / totalCount) * 100) : 0;
+                const isSelected = dashFilterType === name;
                 return `
-                    <div onclick="window.filterByType('${name.replace(/'/g, "\\'")}')" class="hover:bg-purple-100/70 p-1.5 rounded transition-colors cursor-pointer ${isSelected ? 'bg-purple-100 ring-1 ring-purple-400 font-semibold' : ''}" title="คลิกเพื่อกรองเฉพาะประเภทนี้">
+                    <div onclick="window.setDashFilter('type', '${name.replace(/'/g, "\\'")}')" 
+                        class="p-2 rounded-xl transition-all cursor-pointer ${isSelected ? 'bg-purple-100 ring-2 ring-purple-500 font-bold shadow-sm' : 'hover:bg-purple-50/80 bg-slate-50/60'}" 
+                        title="${isSelected ? 'คลิกเพื่อยกเลิกตัวกรองนี้' : 'คลิกเพื่อดูสถิติเฉพาะประเภทนี้'}">
                         <div class="flex justify-between items-center text-xs mb-1 font-medium">
-                            <span class="text-gray-800 truncate" title="${name}">${name}</span>
+                            <span class="text-gray-800 truncate flex items-center gap-1.5" title="${name}">
+                                ${isSelected ? '<span class="text-purple-700">✓</span>' : ''}
+                                <span>${name}</span>
+                            </span>
                             <div class="text-right shrink-0 ml-2">
-                                <span class="font-bold text-purple-700">${data.count.toLocaleString()} ชิ้น</span>
+                                <span class="font-bold ${isSelected ? 'text-purple-800' : 'text-purple-700'}">${activeData.count.toLocaleString()} ชิ้น</span>
                                 <span class="text-gray-400 text-[10px] ml-1">(${pct}%)</span>
-                                <span class="text-emerald-600 font-semibold ml-1.5">${data.value > 0 ? data.value.toLocaleString() + ' ฿' : ''}</span>
+                                <span class="text-emerald-600 font-semibold ml-1.5">${activeData.value > 0 ? activeData.value.toLocaleString() + ' ฿' : ''}</span>
                             </div>
                         </div>
                         <div class="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                            <div class="bg-purple-600 h-1.5 rounded-full" style="width: ${pct}%"></div>
+                            <div class="bg-purple-600 h-1.5 rounded-full transition-all duration-300" style="width: ${pct}%"></div>
                         </div>
                     </div>
                 `;
             }).join('');
         }
     }
+
     // Render Div Breakdown
     const divContainer = document.getElementById('dashDivBreakdown');
     if (divContainer) {
-        const sortedDivs = Object.entries(divMap).sort((a, b) => b[1].count - a[1].count);
+        // ใช้ baseDivMap ในการเรียงหัวข้อ เพื่อให้ผู้ใช้สามารถคลิกสลับแผนกอื่นได้เสมอ
+        const sortedDivs = Object.entries(baseDivMap).sort((a, b) => b[1].count - a[1].count);
         if (sortedDivs.length === 0) {
             divContainer.innerHTML = '<p class="text-gray-400 py-3 text-center">ไม่มีข้อมูล</p>';
         } else {
-            divContainer.innerHTML = sortedDivs.map(([name, data]) => {
-                const pct = totalCount > 0 ? Math.round((data.count / totalCount) * 100) : 0;
-                const isSelected = selectedFilterDiv === name;
+            divContainer.innerHTML = sortedDivs.map(([name, baseData]) => {
+                const activeData = divMap[name] || { count: 0, value: 0 };
+                const pct = totalCount > 0 ? Math.round((activeData.count / totalCount) * 100) : 0;
+                const isSelected = dashFilterDiv === name;
                 return `
-                    <div onclick="window.filterByDiv('${name.replace(/'/g, "\\'")}')" class="hover:bg-blue-100/70 p-1.5 rounded transition-colors cursor-pointer ${isSelected ? 'bg-blue-100 ring-1 ring-blue-400 font-semibold' : ''}" title="คลิกเพื่อกรองเฉพาะแผนกนี้">
+                    <div onclick="window.setDashFilter('div', '${name.replace(/'/g, "\\'")}')" 
+                        class="p-2 rounded-xl transition-all cursor-pointer ${isSelected ? 'bg-blue-100 ring-2 ring-blue-500 font-bold shadow-sm' : 'hover:bg-blue-50/80 bg-slate-50/60'}" 
+                        title="${isSelected ? 'คลิกเพื่อยกเลิกตัวกรองนี้' : 'คลิกเพื่อดูสถิติเฉพาะแผนกนี้'}">
                         <div class="flex justify-between items-center text-xs mb-1 font-medium">
-                            <span class="text-gray-800 truncate" title="${name}">${name}</span>
+                            <span class="text-gray-800 truncate flex items-center gap-1.5" title="${name}">
+                                ${isSelected ? '<span class="text-blue-700">✓</span>' : ''}
+                                <span>${name}</span>
+                            </span>
                             <div class="text-right shrink-0 ml-2">
-                                <span class="font-bold text-blue-700">${data.count.toLocaleString()} ชิ้น</span>
+                                <span class="font-bold ${isSelected ? 'text-blue-800' : 'text-blue-700'}">${activeData.count.toLocaleString()} ชิ้น</span>
                                 <span class="text-gray-400 text-[10px] ml-1">(${pct}%)</span>
-                                <span class="text-emerald-600 font-semibold ml-1.5">${data.value > 0 ? data.value.toLocaleString() + ' ฿' : ''}</span>
+                                <span class="text-emerald-600 font-semibold ml-1.5">${activeData.value > 0 ? activeData.value.toLocaleString() + ' ฿' : ''}</span>
                             </div>
                         </div>
                         <div class="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                            <div class="bg-blue-600 h-1.5 rounded-full" style="width: ${pct}%"></div>
+                            <div class="bg-blue-600 h-1.5 rounded-full transition-all duration-300" style="width: ${pct}%"></div>
                         </div>
                     </div>
                 `;
             }).join('');
         }
     }
-    // Render Parcel Charts using Chart.js (if library is loaded)
+
+    // Render Parcel Charts using Chart.js
     if (typeof Chart !== 'undefined') {
         renderParcelCharts(typeMap, divMap, totalBookValue, totalAccDepr);
     }
