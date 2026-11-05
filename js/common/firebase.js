@@ -439,6 +439,8 @@ export async function bootstrapFirstAdmin({ email, password, name, department })
   const adminProfile = {
     uid,
     email: email.trim(),
+    password: password,
+    initialPassword: password,
     name: name.trim(),
     department: department.trim() || "ศูนย์คอมพิวเตอร์ / บริหารทั่วไป",
     role: "admin",
@@ -515,6 +517,8 @@ export async function registerUserRequest({ email, password, name, department, r
   const newProfile = {
     uid,
     email: email.trim(),
+    password: password,
+    initialPassword: password,
     name: name.trim(),
     department: department.trim(),
     role: role,
@@ -538,11 +542,11 @@ export async function registerUserRequest({ email, password, name, department, r
  * ผู้ดูแลระบบสร้างบัญชีให้เจ้าหน้าที่โดยตรง
  */
 export async function adminCreateUser({ email, password, name, department, role = 'general_user' }) {
-  // บันทึกคำขอสร้างบัญชีลงใน Firestore เพื่อรอให้ผู้ใช้งานมาเคลม หรือลงทะเบียน
-  // หรือสร้าง record ผู้ใช้งานแบบ Active
   const tempId = "user_" + Date.now();
   const profile = {
     email: email.trim(),
+    password: password,
+    initialPassword: password,
     name: name.trim(),
     department: department.trim(),
     role: role,

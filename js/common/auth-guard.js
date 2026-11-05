@@ -400,8 +400,8 @@ window.renderAdminUsersList = async function () {
     }
 
     // Password display helper
-    const userPass = u.password || u.initialPassword || '(เข้ารหัสไว้)';
-    const isMasked = userPass === '(เข้ารหัสไว้)';
+    const userPass = u.password || u.initialPassword || '';
+    const hasPass = Boolean(userPass);
 
     // Department pending request indicator
     let deptDisplay = u.department || "-";
@@ -426,11 +426,11 @@ window.renderAdminUsersList = async function () {
         <td class="px-3 py-2.5 text-slate-600 font-mono">${u.email || "-"}</td>
         <td class="px-3 py-2.5 text-slate-700">
           <div class="flex items-center gap-1.5">
-            <span id="pass_display_${idx}" class="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-[11px] select-all">${isMasked ? '••••••••' : '••••••••'}</span>
-            ${!isMasked ? `
-              <button onclick="toggleShowPassword('${idx}', '${userPass.replace(/'/g, "\\'")}')" id="pass_btn_${idx}" class="text-[11px] text-teal-700 hover:text-teal-900" title="แสดง/ซ่อนรหัสผ่าน">👁️</button>
+            <span id="pass_display_${idx}" class="font-mono bg-slate-100 px-2 py-0.5 rounded text-[11px] select-all tracking-wider text-slate-700">${hasPass ? '••••••••' : '(ยังไม่มีรหัส)'}</span>
+            ${hasPass ? `
+              <button type="button" onclick="toggleShowPassword('${idx}')" id="pass_btn_${idx}" class="p-1 rounded hover:bg-slate-200 text-sm text-teal-700 hover:text-teal-900 transition-colors cursor-pointer" title="คลิกเพื่อดูรหัสผ่าน">👁️</button>
             ` : `
-              <span class="text-[10px] text-slate-400" title="ผู้ใช้ตั้งรหัสผ่านเองโดยตรง">🔒 ปลอดภัย</span>
+              <button type="button" onclick="openAdminEditUserModal('${u.id}')" class="text-[10px] text-amber-600 underline hover:text-amber-800" title="คลิกเพื่อตั้งรหัสผ่าน">ตั้งรหัส</button>
             `}
           </div>
         </td>
@@ -466,15 +466,24 @@ window.renderAdminUsersList = async function () {
 };
 
 // สลับการดูรหัสผ่าน
-window.toggleShowPassword = function(idx, actualPass) {
+window.toggleShowPassword = function(idx) {
   const el = document.getElementById(`pass_display_${idx}`);
   const btn = document.getElementById(`pass_btn_${idx}`);
-  if (!el) return;
+  const user = (window._adminCachedUsers || [])[Number(idx)];
+  if (!el || !user) return;
+
+  const actualPass = user.password || user.initialPassword || '';
+  if (!actualPass) return;
+
   if (el.textContent === '••••••••') {
     el.textContent = actualPass;
+    el.classList.remove('tracking-wider');
+    el.classList.add('font-bold', 'text-teal-900', 'bg-teal-50', 'border', 'border-teal-200');
     if (btn) btn.textContent = '🙈';
   } else {
     el.textContent = '••••••••';
+    el.classList.add('tracking-wider');
+    el.classList.remove('font-bold', 'text-teal-900', 'bg-teal-50', 'border', 'border-teal-200');
     if (btn) btn.textContent = '👁️';
   }
 };
