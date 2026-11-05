@@ -8,6 +8,7 @@ import {
   getAuth,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   signOut,
   onAuthStateChanged
 } from "firebase/auth";
@@ -508,6 +509,22 @@ export async function loginUser(email, password) {
 }
 
 /**
+ * ส่งอีเมลรีเซ็ตรหัสผ่าน (Self-Service Password Reset)
+ */
+export async function sendUserPasswordReset(email) {
+  if (!auth) throw new Error("Firebase Auth ยังไม่พร้อมใช้งาน");
+  if (!email || !email.trim()) throw new Error("กรุณาระบุอีเมล");
+  await sendPasswordResetEmail(auth, email.trim());
+  await logAuditAction({
+    action: "password_reset_request",
+    target: "users",
+    targetId: email.trim(),
+    details: `ส่งอีเมลรีเซ็ตรหัสผ่านไปยัง: ${email.trim()}`
+  });
+  return true;
+}
+
+/**
  * ลงทะเบียนขอเข้าใช้งานระบบ (Self-Registration with Pending Approval)
  */
 export async function registerUserRequest({ email, password, name, department, role = 'general_user' }) {
@@ -825,6 +842,7 @@ window.App.common.firebase = {
 window.checkHasAdminUser = checkHasAdminUser;
 window.bootstrapFirstAdmin = bootstrapFirstAdmin;
 window.loginUser = loginUser;
+window.sendUserPasswordReset = sendUserPasswordReset;
 window.registerUserRequest = registerUserRequest;
 window.logoutUser = logoutUser;
 window.adminCreateUser = adminCreateUser;

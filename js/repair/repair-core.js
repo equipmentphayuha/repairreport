@@ -609,44 +609,67 @@ function renderTable() {
         tbody.appendChild(tr);
       }
 
-      // 2. เรนเดอร์การ์ดบนโทรศัพท์มือถือ (Mobile Cards View)
+      // 2. เรนเดอร์การ์ดบนโทรศัพท์มือถือ (Mobile Cards View) - ออกแบบสำหรับช่างและเจ้าหน้าที่หน้างานโดยเฉพาะ
       if (mobileContainer) {
         const card = document.createElement('div');
-        card.className = "bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm space-y-2";
+        card.className = "bg-white p-4 rounded-2xl border border-slate-200/90 shadow-md space-y-3 transition-all hover:border-teal-400";
         card.innerHTML = `
-          <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
-            <div class="flex items-center gap-2">
-              <span class="font-bold text-teal-700 font-mono text-sm">${r.repairNo}</span>
-              <span class="text-xs text-slate-400">📅 ${formatDateToBE(r.date)}</span>
+          <!-- Card Header: เลขที่ใบซ่อม & สถานะชัดเจน -->
+          <div class="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-teal-800 font-mono text-base tracking-tight">${r.repairNo}</span>
+                ${durationBadge}
+              </div>
+              <div class="text-[11px] text-slate-400 mt-0.5">📅 วันที่แจ้ง: ${formatDateToBE(r.date)}</div>
             </div>
-            <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold ${statusBadge}">${r.status}</span>
+            <span class="px-2.5 py-1 rounded-full text-xs font-bold shadow-sm ${statusBadge}">${r.status}</span>
           </div>
 
-          <div>
-            <div class="font-semibold text-slate-800 text-sm">${r.equipName}</div>
-            <div class="text-xs text-teal-700 font-medium">📍 ${r.div}</div>
-            <div class="text-xs text-slate-500 mt-0.5 line-clamp-2"><strong>อาการ:</strong> ${r.symptom || '-'}</div>
-          </div>
-
-          <div class="flex flex-wrap items-center justify-between text-xs text-slate-500 pt-1.5 border-t border-slate-100 gap-2">
-            <div>👷 ${r.assignee || 'ยังไม่ระบุ'}</div>
-            <div class="flex items-center gap-2">
-              ${durationBadge}
-              <span class="font-bold text-slate-700">${Number(r.cost || 0).toLocaleString()} บ.</span>
+          <!-- Card Body: ข้อมูลอุปกรณ์, แผนก, และอาการชำรุด -->
+          <div class="space-y-1.5">
+            <div class="flex items-start justify-between gap-1">
+              <h4 class="font-bold text-slate-900 text-sm leading-snug">${r.equipName}</h4>
+            </div>
+            <div class="flex flex-wrap gap-2 text-xs">
+              <span class="inline-flex items-center gap-1 text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md font-semibold border border-teal-100">
+                🏢 ${r.div}
+              </span>
+              ${r.equipCode ? `<span class="inline-flex items-center gap-1 text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md font-mono text-[11px] border border-purple-100">🏷️ ${r.equipCode}</span>` : ''}
+            </div>
+            <div class="p-2.5 bg-slate-50 rounded-xl text-xs text-slate-700 border border-slate-100 leading-relaxed">
+              <strong class="text-rose-600">อาการ:</strong> ${r.symptom || '-'}
             </div>
           </div>
 
-          <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-            <button onclick="previewWorkOrderSlip(${realIndex})" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
-              <span>🖨️</span> พิมพ์
+          <!-- Card Assignee & Cost -->
+          <div class="flex items-center justify-between text-xs bg-slate-50/70 p-2 rounded-xl border border-slate-100">
+            <div class="flex items-center gap-1 text-slate-600">
+              <span>👷 ช่าง:</span>
+              <strong class="text-indigo-700">${r.assignee || 'ยังไม่มอบหมาย'}</strong>
+            </div>
+            <div>
+              <span class="text-slate-400 text-[11px]">ค่าใช้จ่าย:</span>
+              <strong class="text-emerald-700 text-sm ml-1">${Number(r.cost || 0).toLocaleString()} ฿</strong>
+            </div>
+          </div>
+
+          <!-- Quick Action Buttons สำหรับช่างและเจ้าหน้าที่บนมือถือ -->
+          <div class="grid grid-cols-3 gap-2 pt-1 border-t border-slate-100">
+            <button onclick="previewWorkOrderSlip(${realIndex})" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition shadow-sm active:scale-95">
+              <span>🖨️</span> ใบส่งซ่อม
             </button>
             ${canEditThis ? `
-            <button onclick="editRepair(${realIndex})" class="bg-teal-50 hover:bg-teal-100 text-teal-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
-              <span>✏️</span> แก้ไข
+            <button onclick="editRepair(${realIndex})" class="w-full bg-teal-600 hover:bg-teal-700 text-white py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition shadow-sm active:scale-95">
+              <span>⚡</span> อัปเดตงาน
             </button>
-            <button onclick="deleteRepair(${realIndex})" class="bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition">
-              ลบ
-            </button>` : ''}
+            <button onclick="deleteRepair(${realIndex})" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition active:scale-95">
+              <span>🗑️</span> ลบ
+            </button>` : `
+            <div class="col-span-2 text-right text-[11px] text-slate-400 py-2 self-center">
+              🔒 สิทธิ์ดูอย่างเดียว
+            </div>
+            `}
           </div>
         `;
         mobileContainer.appendChild(card);

@@ -761,10 +761,64 @@ window.selectChartTab = function (tab) {
   }
 };
 
-// ปิด dropdown เมื่อคลิกนอก
-document.addEventListener("click", (e) => {
-  const chartsWrapper = document.getElementById("chartsMenuWrapper");
-  if (chartsWrapper && !chartsWrapper.contains(e.target)) {
-    window.closeChartsMenu();
+// ============================================================
+// Forgot Password Modal & Logic
+// ============================================================
+window.openForgotPasswordModal = function() {
+  const m = document.getElementById('forgotPasswordModal');
+  const alertEl = document.getElementById('forgotPassAlert');
+  if (alertEl) alertEl.classList.add('hidden');
+  const emailInput = document.getElementById('loginEmail');
+  const forgotInput = document.getElementById('forgotPassEmail');
+  if (emailInput && forgotInput && emailInput.value) {
+    forgotInput.value = emailInput.value;
   }
-});
+  if (m) m.classList.remove('hidden');
+};
+
+window.closeForgotPasswordModal = function() {
+  document.getElementById('forgotPasswordModal')?.classList.add('hidden');
+};
+
+window.handleForgotPasswordSubmit = async function(e) {
+  e.preventDefault();
+  const email = document.getElementById('forgotPassEmail')?.value.trim();
+  const btn = document.getElementById('forgotPassSubmitBtn');
+  const alertEl = document.getElementById('forgotPassAlert');
+
+  if (!email) return alert('กรุณากรอกอีเมล');
+
+  try {
+    btn.disabled = true;
+    btn.innerHTML = '⏳ กำลังส่ง...';
+    if (alertEl) alertEl.classList.add('hidden');
+
+    if (typeof window.sendUserPasswordReset === 'function') {
+      await window.sendUserPasswordReset(email);
+      if (alertEl) {
+        alertEl.className = 'p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold leading-relaxed block';
+        alertEl.innerHTML = `✅ ส่งลิงก์รีเซ็ตรหัสผ่านไปยัง <strong>${email}</strong> เรียบร้อยแล้ว!<br><span class="text-[11px] font-normal text-emerald-700">กรุณาตรวจสอบใน Inbox หรือโฟลเดอร์ Junk/Spam Mail ของคุณ</span>`;
+      }
+      setTimeout(() => {
+        window.closeForgotPasswordModal();
+      }, 4000);
+    } else {
+      throw new Error('ฟังก์ชันส่งอีเมลรีเซ็ตรหัสผ่านยังไม่พร้อม');
+    }
+  } catch (err) {
+    console.error('Password reset error:', err);
+    let msg = err.message || 'ไม่สามารถส่งลิงก์รีเซ็ตได้';
+    if (err.code === 'auth/user-not-found') {
+      msg = 'ไม่พบบัญชีผู้ใช้งานที่ใช้อีเมลนี้';
+    } else if (err.code === 'auth/invalid-email') {
+      msg = 'รูปแบบอีเมลไม่ถูกต้อง';
+    }
+    if (alertEl) {
+      alertEl.className = 'p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold block';
+      alertEl.innerText = '⚠️ ' + msg;
+    }
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '📨 ส่งลิงก์รีเซ็ต';
+  }
+};

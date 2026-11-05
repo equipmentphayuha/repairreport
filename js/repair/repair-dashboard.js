@@ -163,6 +163,9 @@ function renderDashboard() {
     document.getElementById('kpi-top-equip-sub').innerText = 'งบซ่อม 0 บาท';
   }
 
+  // อัปเดตกล่องเฝ้าระวังแทงจำหน่าย (Disposal Watchlist)
+  renderDisposalWatchlist(filteredRepairs);
+
   // เรนเดอร์ตารางสรุป
   renderDashboardTables();
 
@@ -1454,3 +1457,226 @@ function executePrintExecutiveReport() {
 window.openExecutiveReportModal = openExecutiveReportModal;
 window.closeExecutiveReportModal = closeExecutiveReportModal;
 window.executePrintExecutiveReport = executePrintExecutiveReport;
+
+// =========================================================================
+// EXECUTIVE ONE-PAGE KPI & DISPOSAL / COST-BENEFIT REPORT
+// =========================================================================
+
+// ฟังก์ชันวิเคราะห์ครุภัณฑ์ที่เข้าเกณฑ์เสนอแทงจำหน่ายและจุดคุ้มทุน
+function analyzeDisposalAndBreakEven(repairsList = repairs) {
+  // ดึงรายการพัสดุจาก local storage หรือตัวแปรระบบ
+  let parcelItems = [];
+  try {
+    const raw = localStorage.getItem('hospital_equipments_data');
+    if (raw) parcelItems = JSON.parse(raw);
+  } catch (_) {}
+
+  const parcelPriceMap = {};
+  parcelItems.forEach(p => {
+    const code = (p.noid || p.code || '').trim().toLowerCase();
+    const name = (p.name || '').trim().toLowerCase();
+    const price = Number(String(p.perUnit || p.price || 0).replace(/,/g, '')) || 0;
+    if (code) parcelPriceMap[code] = price;
+    if (name && !parcelPriceMap[name]) parcelPriceMap[name] = price;
+  });
+
+  // รวบรวมข้อมูลการซ่อมตามครุภัณฑ์
+  const equipStats = {};
+  repairsList.forEach(r => {
+    const equipName = (r.equipName || 'ไม่ระบุ').trim();
+    const equipCode = (r.equipCode || '').trim();
+    const div = (r.div || 'ไม่ระบุ').trim();
+    const cost = Number(r.cost) || 0;
+    const key = equipCode ? `${equipName}__${equipCode}` : equipName;
+
+    if (!equipStats[key]) {
+      // ค้นหาราคาจัดซื้อโดยประมาณ
+      let originalPrice = 0;
+      if (equipCode && parcelPriceMap[equipCode.toLowerCase()]) {
+        originalPrice = parcelPriceMap[equipCode.toLowerCase()];
+      } else if (parcelPriceMap[equipName.toLowerCase()]) {
+        originalPrice = parcelPriceMap[equipName.toLowerCase()];
+      }
+
+      equipStats[key] = {
+        name: equipName,
+        code: equipCode || '-',
+        div,
+        repairCount: 0,
+        totalCost: 0,
+        originalPrice: originalPrice,
+        isDisposed: r.status === 'จำหน่ายออก'
+      };
+    }
+
+    equipStats[key].repairCount += 1;
+    equipStats[key].totalCost += cost;
+    if (r.status === 'จำหน่ายออก') equipStats[key].isDisposed = true;
+  });
+
+  const allEquips = Object.values(equipStats);
+
+  // คัดกรอง Watchlist:
+  // 1. ซ่อมบ่อย >= 3 ครั้ง
+  // 2. หรือค่าซ่อมสะสม >= 50% ของราคาเดิม (ถ้ามีราคา)
+  // 3. หรือค่าซ่อมสะสม >= 15,000 บาท
+  // 4. หรือมีสถานะจำหน่ายออกแล้ว
+  const watchlist = allEquips.filter(eq => {
+    if (eq.isDisposed) return true;
+    if (eq.repairCount >= 3) return true;
+    if (eq.originalPrice > 0 && (eq.totalCost / eq.originalPrice) >= 0.5) return true;
+    if (eq.totalCost >= 15000) return true;
+    return false;
+  }).sort((a, b) => {
+    // เรียงตามสัดส่วนค่าซ่อมต่อราคา หรือเรียงตามค่าซ่อม
+    const ratioA = a.originalPrice > 0 ? a.totalCost / a.originalPrice : 0;
+    const ratioB = b.originalPrice > 0 ? b.totalCost / b.originalPrice : 0;
+    return (ratioB - ratioA) || (b.totalCost - a.totalCost);
+  });
+
+  return { allEquips, watchlist };
+}
+
+// อัปเดตกล่องแจ้งเตือนบนหน้า Dashboard
+function renderDisposalWatchlist(repairsList) {
+  const countEl = document.getElementById('disposalWatchlistCount');
+  const summaryEl = document.getElementById('disposalWatchlistSummary');
+  if (!countEl || !summaryEl) return;
+
+  const { watchlist } = analyzeDisposalAndBreakEven(repairsList);
+  countEl.innerText = `${watchlist.length} รายการ`;
+
+  if (watchlist.length === 0) {
+    summaryEl.innerHTML = `
+      <div class="col-span-3 text-emerald-800 bg-white/70 p-3 rounded-xl border border-emerald-200 flex items-center gap-2">
+        <span>✅</span>
+        <span>ยอดเยี่ยม! ไม่พบครุภัณฑ์ที่มีประวัติซ่อมเกินจุดคุ้มทุนหรือซ่อมซ้ำซากในรอบปีงบประมาณนี้</span>
+      </div>
+    `;
+    return;
+  }
+
+  // แสดง 3 อันดับแรกในกล่อง
+  const top3 = watchlist.slice(0, 3);
+  let html = '';
+  top3.forEach((item, idx) => {
+    let ratioText = '';
+    if (item.originalPrice > 0) {
+      const pct = Math.round((item.totalCost / item.originalPrice) * 100);
+      ratioText = `สัดส่วนค่าซ่อม: <strong>${pct}%</strong> ของราคากลาง`;
+    } else {
+      ratioText = `ค่าซ่อมสะสมสูง: <strong>${item.totalCost.toLocaleString()} ฿</strong>`;
+    }
+
+    html += `
+      <div class="bg-white/90 p-3 rounded-xl border border-rose-200 space-y-1 shadow-xs">
+        <div class="flex items-center justify-between font-bold text-slate-800">
+          <span class="truncate" title="${item.name}">${idx + 1}. ${item.name}</span>
+          <span class="text-[10px] bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded font-bold">${item.repairCount} ครั้ง</span>
+        </div>
+        <div class="text-[11px] text-slate-500">🏢 ${item.div} | รหัส: ${item.code}</div>
+        <div class="text-[11px] text-rose-700">${ratioText}</div>
+      </div>
+    `;
+  });
+
+  summaryEl.innerHTML = html;
+}
+
+// เปิดหน้าต่าง One-Page KPI Modal
+window.openExecutiveOnePageModal = function() {
+  const modal = document.getElementById('executiveOnePageModal');
+  if (!modal) return;
+
+  // วันที่ปัจจุบัน
+  const dateEl = document.getElementById('onepageGeneratedDate');
+  if (dateEl) {
+    dateEl.innerText = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+
+  // คำนวณ KPI
+  const totalRepairs = repairs.length;
+  const completedList = repairs.filter(r => r.status === 'เสร็จสิ้น');
+  const fixRate = totalRepairs > 0 ? Math.round((completedList.length / totalRepairs) * 100) : 0;
+  const totalCost = repairs.reduce((sum, r) => sum + (Number(r.cost) || 0), 0);
+  const avgCostPerRepair = totalRepairs > 0 ? Math.round(totalCost / totalRepairs) : 0;
+
+  // ระยะเวลาเฉลี่ย
+  let totalDays = 0, countDays = 0;
+  completedList.forEach(r => {
+    if (r.date) {
+      const s = _dashParseDate(r.date);
+      if (s) {
+        const e = r.completedDate ? (_dashParseDate(r.completedDate) || s) : s;
+        totalDays += Math.max(0, Math.round((e - s) / (1000 * 60 * 60 * 24)));
+        countDays++;
+      }
+    }
+  });
+  const avgDays = countDays > 0 ? (totalDays / countDays).toFixed(1) : 0;
+
+  // วิเคราะห์จุดคุ้มทุน
+  const { watchlist } = analyzeDisposalAndBreakEven(repairs);
+
+  document.getElementById('onepageKpiSuccessRate').innerText = `${fixRate}%`;
+  document.getElementById('onepageKpiSuccessSub').innerText = `ซ่อมเสร็จ ${completedList.length} จาก ${totalRepairs} งาน`;
+  document.getElementById('onepageKpiAvgTime').innerText = `${avgDays} วัน`;
+  document.getElementById('onepageKpiTotalCost').innerText = `${totalCost.toLocaleString()} ฿`;
+  document.getElementById('onepageKpiAvgCostPerRepair').innerText = `เฉลี่ย ${avgCostPerRepair.toLocaleString()} ฿/งาน`;
+  document.getElementById('onepageKpiDisposalCount').innerText = `${watchlist.length} รายการ`;
+  document.getElementById('onepageKpiDisposalSub').innerText = watchlist.length > 0 ? `พบ ${watchlist.length} ชิ้นที่ซ่อมไม่คุ้มทุน` : 'อยู่ในเกณฑ์คุ้มค่า';
+
+  // ตาราง Watchlist
+  const tbody = document.getElementById('disposalReportTableBody');
+  if (tbody) {
+    if (watchlist.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">ไม่พบรายการครุภัณฑ์ที่เข้าข่ายเสนอแทงจำหน่าย</td></tr>`;
+    } else {
+      let html = '';
+      watchlist.forEach((eq, idx) => {
+        let pct = eq.originalPrice > 0 ? Math.round((eq.totalCost / eq.originalPrice) * 100) : null;
+        let pctBadge = '';
+        let recommendation = '';
+
+        if (eq.isDisposed) {
+          pctBadge = `<span class="bg-slate-200 text-slate-800 px-2 py-0.5 rounded-full font-bold">แทงจำหน่ายแล้ว</span>`;
+          recommendation = `<span class="text-slate-600 font-semibold">✅ ดำเนินการแทงจำหน่ายเรียบร้อยแล้ว</span>`;
+        } else if (pct !== null && pct >= 70) {
+          pctBadge = `<span class="bg-rose-600 text-white px-2 py-0.5 rounded-full font-bold">${pct}% (วิกฤติ)</span>`;
+          recommendation = `<span class="text-rose-700 font-bold">⛔ สั่งยุติการซ่อม และทำเรื่องขออนุมัติแทงจำหน่ายทันที</span>`;
+        } else if (pct !== null && pct >= 50) {
+          pctBadge = `<span class="bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full font-bold">${pct}%</span>`;
+          recommendation = `<span class="text-amber-800 font-semibold">⚠️ เสนอเข้าแผนจัดซื้อทดแทนปีถัดไป (Replacement)</span>`;
+        } else if (eq.repairCount >= 4) {
+          pctBadge = `<span class="bg-purple-100 text-purple-900 px-2 py-0.5 rounded-full font-semibold">ซ่อมบ่อย (${eq.repairCount} ครั้ง)</span>`;
+          recommendation = `<span class="text-purple-800 font-medium">🔍 ส่งตรวจเช็กระบบโครงสร้างหลัก / ประเมินความคุ้มค่ารอบใหม่</span>`;
+        } else {
+          pctBadge = `<span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full">ค่าซ่อมสูง</span>`;
+          recommendation = `<span class="text-slate-600">พิจารณาจำกัดงบซ่อมครั้งต่อไป</span>`;
+        }
+
+        const origPriceText = eq.originalPrice > 0 ? `${eq.originalPrice.toLocaleString()} ฿` : '<span class="text-slate-300">- ไม่ระบุ -</span>';
+
+        html += `
+          <tr class="hover:bg-rose-50/40 transition-colors">
+            <td class="py-2.5 px-3 font-bold text-slate-900">${eq.name}</td>
+            <td class="py-2.5 px-3 font-mono text-slate-600">${eq.code}</td>
+            <td class="py-2.5 px-3 text-slate-700">${eq.div}</td>
+            <td class="py-2.5 px-3 text-center font-bold">${eq.repairCount}</td>
+            <td class="py-2.5 px-3 text-right font-bold text-rose-600">${eq.totalCost.toLocaleString()} ฿</td>
+            <td class="py-2.5 px-3 text-right text-slate-600">${origPriceText}</td>
+            <td class="py-2.5 px-3 text-center">${pctBadge}</td>
+            <td class="py-2.5 px-3">${recommendation}</td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+  }
+
+  modal.classList.remove('hidden');
+};
+
+window.closeExecutiveOnePageModal = function() {
+  document.getElementById('executiveOnePageModal')?.classList.add('hidden');
+};

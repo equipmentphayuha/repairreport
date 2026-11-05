@@ -43,6 +43,7 @@
   <!-- โหลด Library แบบ Global Script (Tailwind & Chart.js โหลดทันที ส่วน XLSX/PPTX/html2canvas จะโหลดแบบ On-Demand) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body class="bg-slate-50 text-slate-800">
 
@@ -111,7 +112,10 @@
             </div>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">รหัสผ่าน</label>
+            <div class="flex justify-between items-center mb-1">
+              <label class="block text-xs font-semibold text-slate-700">รหัสผ่าน</label>
+              <button type="button" onclick="openForgotPasswordModal()" class="text-[11px] text-teal-700 hover:text-teal-900 font-semibold hover:underline">ลืมรหัสผ่าน?</button>
+            </div>
             <div class="relative">
               <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs bg-slate-50 focus:bg-white focus:outline-teal-600 focus:ring-2 focus:ring-teal-500/20 transition">
             </div>
@@ -343,6 +347,10 @@
             </select>
           </div>
           
+          <button onclick="openExecutiveOnePageModal()" class="bg-gradient-to-r from-blue-700 to-indigo-800 hover:from-blue-800 hover:to-indigo-900 text-white px-3.5 py-1.5 rounded-lg text-sm font-semibold shadow-md flex items-center gap-1.5 transition no-print" title="สรุปตัวชี้วัด One-Page KPI พร้อมวิเคราะห์จุดคุ้มทุนและเสนอแทงจำหน่าย">
+            <span>🎯</span> สรุปผู้บริหาร (One-Page KPI)
+          </button>
+
           <button onclick="exportDashboardToPPT()" class="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white px-3.5 py-1.5 rounded-lg text-sm font-semibold shadow-md flex items-center gap-1.5 transition">
             <span>📽️</span> สไลด์นำเสนอ PPTX
           </button>
@@ -440,7 +448,29 @@
         </div>
       </div>
 
-            <!-- Charts -->
+      <!-- กล่องวิเคราะห์จุดคุ้มทุนและเสนอพิจารณาแทงจำหน่าย (Executive Cost-Benefit & Disposal Watchlist) -->
+      <div id="disposalWatchlistBanner" class="bg-gradient-to-r from-rose-50 via-amber-50 to-orange-50 border border-rose-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-rose-200/60 pb-2.5">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">⚠️</span>
+            <div>
+              <h3 class="text-sm font-bold text-rose-950 flex items-center gap-1.5">
+                <span>รายการเฝ้าระวัง: ครุภัณฑ์ที่ซ่อมไม่คุ้มทุน / ควรพิจารณาแทงจำหน่าย</span>
+                <span id="disposalWatchlistCount" class="bg-rose-600 text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full">0 รายการ</span>
+              </h3>
+              <p class="text-xs text-rose-700">คำนวณจากครุภัณฑ์ที่ค่าซ่อมสะสมเกิน 50% ของมูลค่าซื้อ หรือมีการซ่อมซ้ำซากเกิน 3 ครั้ง</p>
+            </div>
+          </div>
+          <button type="button" onclick="openExecutiveOnePageModal()" class="text-xs font-bold text-rose-800 bg-rose-100 hover:bg-rose-200 px-3 py-1.5 rounded-xl transition flex items-center gap-1 shadow-sm">
+            <span>📑</span> ดูรายงานวิเคราะห์จุดคุ้มทุนฉบับเต็ม
+          </button>
+        </div>
+        <div id="disposalWatchlistSummary" class="text-xs text-slate-700 grid grid-cols-1 md:grid-cols-3 gap-3">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Charts -->
       <div class="grid grid-cols-1 gap-6">
         <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
           <h3 class="text-sm font-bold text-slate-700 mb-3">เปรียบเทียบจำนวนครั้งและงบประมาณซ่อมตามช่วงเวลา</h3>
@@ -642,6 +672,9 @@
         <div class="flex flex-wrap items-center gap-2">
           <button onclick="openModal()" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow flex items-center gap-1.5 transition" title="กรอกข้อมูลลงทะเบียนซ่อมผ่านฟอร์มมาตรฐาน">
             <span>+</span> เปิดใบส่งซ่อมใหม่
+          </button>
+          <button onclick="openQrScannerModal('repair')" class="bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white px-3.5 py-2 rounded-lg text-sm font-semibold shadow flex items-center gap-1.5 transition" title="สแกน QR Code / Barcode บนตัวเครื่องเพื่อส่งซ่อมทันที">
+            <span>📷</span> สแกน QR ส่งซ่อม
           </button>
           <button onclick="openNewWorkOrderDirectSlip()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow flex items-center gap-1.5 transition" title="พิมพ์และกรอกข้อมูลบนแบบฟอร์มเอกสารใบส่งซ่อมโดยตรง">
             <span>📄</span> กรอกบนแบบฟอร์มใบซ่อมโดยตรง
@@ -1139,6 +1172,11 @@
 
             <!-- Search & Action Toolbar -->
             <div class="flex flex-col sm:flex-row flex-wrap gap-2 items-stretch sm:items-center">
+                <!-- QR Scanner Button -->
+                <button type="button" onclick="openQrScannerModal('inventory')" class="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold shadow flex items-center justify-center gap-1.5 transition" title="สแกน QR Code หรือบาร์โค้ดครุภัณฑ์เพื่อค้นหา">
+                    <span>📷</span> <span>สแกน QR</span>
+                </button>
+
                 <!-- Search Box -->
                 <div class="relative flex-1 sm:w-56">
                     <input type="text" id="parcelSearchInput" aria-label="ค้นหารายการครุภัณฑ์ทั่วไป" placeholder="🔍 ค้นหาทั่วไป..."
@@ -1487,9 +1525,14 @@
           <div>
             <div class="flex justify-between items-center mb-1">
               <label for="formEquipCode" class="block text-xs font-semibold text-slate-600">รหัส/หมายเลขครุภัณฑ์</label>
-              <button type="button" onclick="onGenerateEquipCodeClick()" class="text-[11px] text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2 py-0.5 rounded font-medium transition flex items-center gap-1">
-                <span>⚡</span> สร้างรหัสอัตโนมัติ
-              </button>
+              <div class="flex items-center gap-1">
+                <button type="button" onclick="openQrScannerModal('repair_form')" class="text-[11px] text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-2 py-0.5 rounded font-medium transition flex items-center gap-1">
+                  <span>📷</span> สแกน QR
+                </button>
+                <button type="button" onclick="onGenerateEquipCodeClick()" class="text-[11px] text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2 py-0.5 rounded font-medium transition flex items-center gap-1">
+                  <span>⚡</span> สร้างรหัส
+                </button>
+              </div>
             </div>
             <input type="text" id="formEquipCode" placeholder="เช่น 6510-001-0005" class="w-full border rounded-lg p-2 text-sm font-mono focus:outline-teal-600">
           </div>
@@ -2084,12 +2127,205 @@
     </div>
   </div>
 
+  <!-- ========================================================================= -->
+  <!-- MODAL: ลืมรหัสผ่าน / ขอรีเซ็ตรหัสผ่าน (Self-Service Password Reset)         -->
+  <!-- ========================================================================= -->
+  <div id="forgotPasswordModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[10000] hidden no-print">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden animate-fade-in">
+      <div class="bg-gradient-to-r from-teal-700 to-slate-800 text-white px-5 py-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">🔑</span>
+          <h3 class="font-bold text-sm sm:text-base">รีเซ็ตรหัสผ่าน</h3>
+        </div>
+        <button type="button" onclick="closeForgotPasswordModal()" class="text-white/70 hover:text-white text-lg">✕</button>
+      </div>
+      <form id="forgotPasswordForm" onsubmit="handleForgotPasswordSubmit(event)" class="p-5 space-y-3.5">
+        <p class="text-xs text-slate-600 leading-relaxed">
+          กรอกอีเมลที่ลงทะเบียนไว้ ระบบความปลอดภัยจะส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ไปยังกล่องข้อความของคุณทันที
+        </p>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">อีเมลของคุณ</label>
+          <input type="email" id="forgotPassEmail" required placeholder="name@email.com" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs bg-slate-50 focus:bg-white focus:outline-teal-600">
+        </div>
+        <div id="forgotPassAlert" class="hidden p-2.5 rounded-lg text-xs"></div>
+        <div class="pt-2 border-t flex justify-end gap-2">
+          <button type="button" onclick="closeForgotPasswordModal()" class="px-3 py-1.5 border border-slate-300 text-slate-600 hover:bg-slate-100 rounded-lg text-xs font-semibold">ยกเลิก</button>
+          <button type="submit" id="forgotPassSubmitBtn" class="bg-teal-700 hover:bg-teal-800 text-white px-4 py-1.5 rounded-lg text-xs font-semibold shadow transition">📨 ส่งลิงก์รีเซ็ต</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: สแกน QR Code / Barcode ผ่านกล้องอุปกรณ์ (QR Scanner Modal)            -->
+  <!-- ========================================================================= -->
+  <div id="qrScannerModal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-[99999] hidden no-print">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden flex flex-col max-h-[92vh] animate-fade-in">
+      <div class="bg-gradient-to-r from-teal-700 to-slate-900 text-white px-5 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="text-2xl">📷</span>
+          <div>
+            <h3 class="font-bold text-sm sm:text-base leading-tight">สแกน QR Code / Barcode</h3>
+            <p class="text-[11px] text-teal-200" id="qrScannerTargetSubtitle">ส่องกล้องไปที่ป้าย QR หรือ Barcode บนเครื่อง</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeQrScannerModal()" class="text-white/70 hover:text-white text-2xl font-bold leading-none p-1">✕</button>
+      </div>
+
+      <div class="p-4 space-y-3 flex-1 flex flex-col items-center">
+        <!-- ช่องแสดงภาพจากกล้อง -->
+        <div class="w-full bg-slate-950 rounded-2xl overflow-hidden relative border-2 border-dashed border-teal-500 shadow-inner flex items-center justify-center min-h-[260px] sm:min-h-[300px]">
+          <div id="qrScannerReader" class="w-full"></div>
+          <div id="qrScannerLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90 text-white text-xs gap-2">
+            <span class="animate-spin text-2xl">⏳</span>
+            <span>กำลังเปิดกล้อง...</span>
+          </div>
+        </div>
+
+        <!-- กล่องแสดงข้อความผลลัพธ์การสแกนล่าสุด -->
+        <div id="qrScannerResultBox" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-center text-xs space-y-1">
+          <div class="text-slate-500 text-[11px]">ผลการสแกนล่าสุด:</div>
+          <div id="qrScannerResultText" class="font-mono font-bold text-teal-800 text-sm break-all">- ยังไม่มีข้อมูล -</div>
+        </div>
+
+        <!-- ตัวเลือกหรือปุ่มสลับกล้อง -->
+        <div class="flex gap-2 w-full">
+          <button type="button" onclick="toggleCameraFacing()" class="flex-1 py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+            <span>🔄</span> สลับกล้องหน้า/หลัง
+          </button>
+          <button type="button" onclick="closeQrScannerModal()" class="py-2 px-4 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-semibold transition">
+            ปิด
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: รายงานสรุปผู้บริหาร One-Page KPI & รายงานแทงจำหน่าย (Executive One-Page) -->
+  <!-- ========================================================================= -->
+  <div id="executiveOnePageModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 z-[9999] hidden no-print overflow-hidden">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-5xl w-full flex flex-col h-[95vh] max-h-[95vh] overflow-hidden animate-fade-in">
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white px-5 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between shrink-0 border-b border-slate-700">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-indigo-500/20 rounded-xl text-2xl border border-indigo-400/30">🎯</div>
+          <div>
+            <h3 class="font-bold text-sm sm:text-base leading-tight flex items-center gap-2">
+              <span>รายงานผู้บริหาร One-Page Executive Summary</span>
+              <span class="text-[10px] bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 px-2 py-0.5 rounded-full font-normal">KPI & จุดคุ้มทุน</span>
+            </h3>
+            <p class="text-xs text-slate-300">สรุปดัชนีชี้วัดหลัก (KPIs), วิเคราะห์จุดคุ้มทุนในการซ่อม และบัญชีเฝ้าระวังแทงจำหน่าย</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 shadow transition">
+            <span>🖨️</span> พิมพ์รายงาน
+          </button>
+          <button type="button" onclick="closeExecutiveOnePageModal()" class="text-white/70 hover:text-white text-2xl font-bold leading-none p-1">✕</button>
+        </div>
+      </div>
+
+      <!-- Modal Content (Scrollable) -->
+      <div class="p-4 sm:p-6 space-y-5 overflow-y-auto bg-slate-50 flex-1" id="executiveOnePageContent">
+        <!-- 1. Executive Summary Cards (One-Page Overview) -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-teal-600">
+            <div class="text-xs text-slate-500 font-medium">ความสำเร็จในการซ่อม (Fix Rate)</div>
+            <div class="text-2xl font-extrabold text-teal-800 mt-1" id="onepageKpiSuccessRate">0%</div>
+            <div class="text-[11px] text-slate-400 mt-0.5" id="onepageKpiSuccessSub">เสร็จ 0 จาก 0 รายการ</div>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-cyan-600">
+            <div class="text-xs text-slate-500 font-medium">เวลาซ่อมเฉลี่ย (MTTR)</div>
+            <div class="text-2xl font-extrabold text-cyan-800 mt-1" id="onepageKpiAvgTime">0 วัน</div>
+            <div class="text-[11px] text-slate-400 mt-0.5" id="onepageKpiAvgTimeSub">เป้าหมาย &le; 3 วัน</div>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-emerald-600">
+            <div class="text-xs text-slate-500 font-medium">งบซ่อมสะสมทั้งระบบ</div>
+            <div class="text-2xl font-extrabold text-emerald-800 mt-1" id="onepageKpiTotalCost">0 ฿</div>
+            <div class="text-[11px] text-slate-400 mt-0.5" id="onepageKpiAvgCostPerRepair">เฉลี่ย 0 ฿/งาน</div>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-rose-600">
+            <div class="text-xs text-slate-500 font-medium">ควรพิจารณาแทงจำหน่าย</div>
+            <div class="text-2xl font-extrabold text-rose-700 mt-1" id="onepageKpiDisposalCount">0 ชิ้น</div>
+            <div class="text-[11px] text-rose-600 font-bold mt-0.5" id="onepageKpiDisposalSub">ซ่อมเกินจุดคุ้มทุน</div>
+          </div>
+        </div>
+
+        <!-- 2. Cost-Benefit & Disposal Watchlist Table -->
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div>
+              <h4 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                <span>⚠️</span> รายงานวิเคราะห์จุดคุ้มทุน & รายการเสนอแทงจำหน่าย (Cost-Benefit & Disposal Criteria)
+              </h4>
+              <p class="text-xs text-slate-500">เกณฑ์คัดกรอง: ค่าซ่อมสะสมเกิน 50% ของราคากลาง หรือ ซ่อมบ่อยผิดปกติตั้งแต่ 3 ครั้งขึ้นไป</p>
+            </div>
+            <span class="text-xs bg-rose-50 text-rose-800 border border-rose-200 px-2.5 py-1 rounded-full font-bold" id="disposalCriteriaBadge">
+              เกณฑ์ รพ. มาตรฐานกระทรวงสาธารณสุข
+            </span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-100 text-slate-700 uppercase font-semibold">
+                <tr>
+                  <th class="py-2.5 px-3">ชื่อครุภัณฑ์ / เครื่องมือ</th>
+                  <th class="py-2.5 px-3">รหัสพัสดุ</th>
+                  <th class="py-2.5 px-3">แผนกผู้ครอง</th>
+                  <th class="py-2.5 px-3 text-center">ซ่อมแล้ว (ครั้ง)</th>
+                  <th class="py-2.5 px-3 text-right">ค่าซ่อมสะสม</th>
+                  <th class="py-2.5 px-3 text-right">ราคาจัดซื้อ (ประเมิน)</th>
+                  <th class="py-2.5 px-3 text-center">สัดส่วนค่าซ่อม</th>
+                  <th class="py-2.5 px-3 text-center">ข้อเสนอแนะเชิงยุทธศาสตร์</th>
+                </tr>
+              </thead>
+              <tbody id="disposalReportTableBody" class="divide-y divide-slate-100">
+                <!-- Rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 3. Key Observations & Action Plan -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <h4 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-1.5 mb-2">
+              <span>💡</span> ข้อสังเกตด้านการบริหารงบประมาณ (Financial Insights)
+            </h4>
+            <ul class="text-xs text-slate-600 space-y-1.5 list-disc list-inside leading-relaxed" id="onepageFinancialInsights">
+              <li>ระบบตรวจพบแผนกที่ใช้งบซ่อมแซมสูงสุดและประเภทอุปกรณ์ที่ชำรุดซ้ำซาก</li>
+              <li>การแทงจำหน่ายอุปกรณ์ที่ซ่อมไม่คุ้มทุนจะช่วยประหยัดงบซ่อมบำรุงรายปีลงได้อย่างมีนัยสำคัญ</li>
+            </ul>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <h4 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-1.5 mb-2">
+              <span>📋</span> แผนเสนอจัดซื้อทดแทนรอบปีงบประมาณถัดไป
+            </h4>
+            <div class="text-xs text-slate-600 leading-relaxed" id="onepageProcurementAdvice">
+              เสนอให้ฝ่ายบริหารและพัสดุนำรายการครุภัณฑ์ที่มีสัดส่วนค่าซ่อมเกิน 50% หรือเกิน 70% เข้าสู่แผนความต้องการจัดซื้อทดแทน (Replacement Plan) แทนการอนุมัติซ่อมซ้ำ
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="bg-slate-100 px-6 py-3 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500">
+        <div>ข้อมูล ณ วันที่: <span id="onepageGeneratedDate" class="font-medium text-slate-700">-</span></div>
+        <button type="button" onclick="closeExecutiveOnePageModal()" class="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl font-semibold transition">
+          ปิดหน้าต่าง
+        </button>
+      </div>
+    </div>
+  </div>
+
   </div> <!-- /#appRootContainer -->
 
   <!-- Unified Application Modules -->
   <script src="js/common/app-namespace.js"></script>
   <script type="module" src="js/common/firebase.js"></script>
   <script src="js/common/auth-guard.js"></script>
+  <script src="js/common/qr-scanner.js"></script>
   <script src="js/common/audit-view.js"></script>
   <script src="js/repair/repair-storage.js"></script>
   <script src="js/repair/repair-excel.js"></script>
