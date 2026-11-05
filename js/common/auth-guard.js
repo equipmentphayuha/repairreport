@@ -101,9 +101,6 @@ function checkAndExecutePendingScannedQr() {
     }, 350);
   }
 }
-    });
-  }
-}
 
 async function checkInitialAdminSetup() {
   if (typeof window.checkHasAdminUser !== "function") return;
