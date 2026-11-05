@@ -1,4 +1,4 @@
-﻿// Main Application Logic for Hospital Equipment Management
+// Main Application Logic for Hospital Equipment Management
 import { db, collection, addDoc, getDocs, getDoc, onSnapshot, doc, setDoc, deleteDoc, writeBatch } from '../common/firebase.js';
 import { defaultParcelFields as defaultFields, isFirebaseConfigured } from '../common/config.js';
 import { parseQuickDate, parseNoidRange, calculateDepreciation } from '../common/utils.js';
@@ -500,11 +500,11 @@ function renderTableBody() {
     displayList.forEach(item => {
         const tr = document.createElement('tr');
         tr.className = `hover:bg-blue-50/60 border-b cursor-pointer transition-colors duration-150 ${editingId === item.id ? 'bg-blue-100 font-medium' : ''}`;
-        tr.title = "คลิกที่แถวเพื่อแก้ไขข้อมูล";
+        tr.title = "คลิกเพื่อดูการ์ดสรุปประวัติครุภัณฑ์";
         
         tr.addEventListener('click', (e) => {
             if (e.target.closest('button')) return;
-            window.editItem(item.id);
+            window.openEquipmentPassportModal(item.id);
         });
         let rowHtml = '';
         activeFields.forEach(f => {
@@ -549,7 +549,11 @@ function renderMobileCards() {
     displayList.forEach(item => {
         const isEditing = editingId === item.id;
         const card = document.createElement('div');
-        card.className = `mobile-card bg-white border ${isEditing ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'} rounded-lg p-3.5 shadow-sm hover:shadow transition-shadow`;
+        card.className = `mobile-card bg-white border ${isEditing ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'} rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer`;
+        card.onclick = (e) => {
+            if (e.target.closest('button') || e.target.closest('summary')) return;
+            window.openEquipmentPassportModal(item.id);
+        };
         // Essential quick fields
         const name = item.name || '(ไม่มีชื่อรายการ)';
         const noid = item.noid || '-';
@@ -1937,4 +1941,182 @@ window.App.parcel = {
     createRepair: (id) => window.createRepairFromParcelItem(id),
     spreadItem: (id) => window.spreadItem(id),
     duplicateItem: (id) => window.duplicateItem(id)
+};
+
+// =========================================================================
+// DIGITAL EQUIPMENT PASSPORT & PROFILE MODAL LOGIC
+// =========================================================================
+
+window.openEquipmentPassportModal = function(itemId) {
+    const item = currentData.find(d => d.id === itemId);
+    if (!item) return;
+
+    const modal = document.getElementById('equipmentPassportModal');
+    if (!modal) return;
+
+    const noid = item.noid || '-';
+    const name = item.name || '(ไม่มีชื่อรายการ)';
+    const div = item.div || '-';
+    const type = item.type || '-';
+    const location = item.location || '-';
+    const perUnitRaw = item.perUnit !== undefined && item.perUnit !== '' ? Number(String(item.perUnit).replace(/,/g, '')) : 0;
+    const moneyType = item.tmoney || item.money || '-';
+    const risk = item.risk || '-';
+    const receiveTm = item.receiveTm || '-';
+
+    // 1. ตั้งค่า Header
+    document.getElementById('passportNoidBadge').innerText = `🆔 ${noid}`;
+    document.getElementById('passportEquipName').innerText = name;
+    document.getElementById('passportDiv').innerText = div;
+    document.getElementById('passportType').innerText = type;
+    document.getElementById('passportLocation').innerText = location;
+    document.getElementById('passportPerUnit').innerText = perUnitRaw > 0 ? `${perUnitRaw.toLocaleString()} ฿` : '-';
+    document.getElementById('passportMoneyType').innerText = moneyType;
+    document.getElementById('passportRisk').innerText = risk;
+
+    // 2. คำนวณอายุและค่าเสื่อมราคา
+    const depr = calculateDepreciation(item);
+    document.getElementById('passportReceivedDate').innerText = `วันที่รับ: ${receiveTm}`;
+    
+    if (depr && depr.ageYears !== undefined) {
+        const years = Math.floor(depr.ageYears);
+        const months = Math.round((depr.ageYears - years) * 12);
+        document.getElementById('passportAgeYears').innerText = years > 0 ? `${years} ปี ${months} ด.` : `${months} เดือน`;
+        
+        if (depr.isFullyDepreciated) {
+            document.getElementById('passportDeprStatus').innerHTML = `<span class="text-slate-600">ครบเกณฑ์ (1 ฿)</span>`;
+            document.getElementById('passportNetBookValue').innerText = `มูลค่าซาก: 1 บาท (ครบ ${depr.usefulYears} ปี)`;
+        } else {
+            document.getElementById('passportDeprStatus').innerHTML = `<span class="text-emerald-700">คงเหลือ ${depr.remainPct}%</span>`;
+            document.getElementById('passportNetBookValue').innerText = `มูลค่าบัญชี: ${depr.bookValue.toLocaleString()} ฿`;
+        }
+    } else {
+        document.getElementById('passportAgeYears').innerText = '-';
+        document.getElementById('passportDeprStatus').innerText = '-';
+        document.getElementById('passportNetBookValue').innerText = '-';
+    }
+
+    // 3. ค้นหาประวัติการซ่อมในระบบ repairs
+    let allRepairs = [];
+    if (typeof window.repairs !== 'undefined' && Array.isArray(window.repairs)) {
+        allRepairs = window.repairs;
+    } else {
+        try {
+            const rawRepairs = localStorage.getItem('hospital_repairs_data');
+            if (rawRepairs) allRepairs = JSON.parse(rawRepairs);
+        } catch (_) {}
+    }
+
+    // จับคู่งานซ่อมจาก noid หรือ code หรือชื่อ
+    const matchedRepairs = allRepairs.filter(r => {
+        const rCode = (r.equipCode || '').trim().toLowerCase();
+        const rName = (r.equipName || '').trim().toLowerCase();
+        const rNoid = (item.noid || '').trim().toLowerCase();
+        const rCodeItem = (item.code || '').trim().toLowerCase();
+        const targetName = name.toLowerCase();
+
+        if (rNoid && rCode && (rCode === rNoid || rCode.includes(rNoid) || rNoid.includes(rCode))) return true;
+        if (rCodeItem && rCode && (rCode === rCodeItem || rCode.includes(rCodeItem))) return true;
+        if (rName && targetName && (rName === targetName || targetName.includes(rName))) return true;
+        return false;
+    });
+
+    const repairCount = matchedRepairs.length;
+    const totalRepairCost = matchedRepairs.reduce((sum, r) => sum + (Number(r.cost) || 0), 0);
+
+    document.getElementById('passportRepairCount').innerText = `${repairCount} ครั้ง`;
+    document.getElementById('passportTotalRepairCost').innerText = `ค่าซ่อมสะสม: ${totalRepairCost.toLocaleString()} ฿`;
+    document.getElementById('passportHistoryCountBadge').innerText = `พบ ${repairCount} รายการ`;
+
+    // 4. ประเมินจุดคุ้มทุน / สภาพเครื่อง
+    const costRatio = perUnitRaw > 0 ? (totalRepairCost / perUnitRaw) : 0;
+    const costRatioPct = Math.round(costRatio * 100);
+    document.getElementById('passportCostRatioSub').innerText = perUnitRaw > 0 ? `สัดส่วนค่าซ่อม: ${costRatioPct}% ของราคาซื้อ` : `ค่าซ่อมสะสม: ${totalRepairCost.toLocaleString()} ฿`;
+
+    const healthEl = document.getElementById('passportHealthBadge');
+    const evalEl = document.getElementById('passportCostBenefitEval');
+
+    if (costRatio >= 0.7 || repairCount >= 5) {
+        healthEl.className = 'bg-rose-500/20 text-rose-300 border border-rose-400/30 text-[11px] font-bold px-2 py-0.5 rounded-full';
+        healthEl.innerText = '🔴 ควรแทงจำหน่าย';
+        evalEl.innerHTML = `<span class="text-rose-600 font-bold">⛔ ซ่อมไม่คุ้มทุน</span>`;
+    } else if (costRatio >= 0.4 || repairCount >= 3) {
+        healthEl.className = 'bg-amber-500/20 text-amber-300 border border-amber-400/30 text-[11px] font-bold px-2 py-0.5 rounded-full';
+        healthEl.innerText = '🟡 เริ่มชำรุดบ่อย';
+        evalEl.innerHTML = `<span class="text-amber-700 font-bold">⚠️ เฝ้าระวังงบซ่อม</span>`;
+    } else if (repairCount > 0) {
+        healthEl.className = 'bg-blue-500/20 text-blue-300 border border-blue-400/30 text-[11px] font-bold px-2 py-0.5 rounded-full';
+        healthEl.innerText = '🔵 เคยผ่านการซ่อม';
+        evalEl.innerHTML = `<span class="text-teal-700 font-bold">🟢 คุ้มค่าพร้อมใช้</span>`;
+    } else {
+        healthEl.className = 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[11px] font-bold px-2 py-0.5 rounded-full';
+        healthEl.innerText = '🟢 สภาพสมบูรณ์';
+        evalEl.innerHTML = `<span class="text-emerald-700 font-bold">✨ ยังไม่เคยซ่อม</span>`;
+    }
+
+    // 5. เรนเดอร์ไทม์ไลน์ประวัติการซ่อม
+    const timelineEl = document.getElementById('passportRepairTimeline');
+    if (timelineEl) {
+        if (matchedRepairs.length === 0) {
+            timelineEl.innerHTML = `
+                <div class="p-6 text-center text-slate-400 text-xs bg-slate-50/70 rounded-xl border border-dashed border-slate-200">
+                    ✨ ครุภัณฑ์รายการนี้ยังไม่เคยมีประวัติการส่งซ่อมในระบบ
+                </div>
+            `;
+        } else {
+            let tHtml = '';
+            // เรียงลำดับจากใหม่ไปเก่า
+            matchedRepairs.slice(0, 10).forEach(r => {
+                let statusCls = 'bg-slate-100 text-slate-700';
+                if (r.status === 'เสร็จสิ้น') statusCls = 'bg-emerald-100 text-emerald-800';
+                else if (r.status === 'กำลังดำเนินการ') statusCls = 'bg-blue-100 text-blue-800';
+                else if (r.status === 'รออะไหล่/ช่างภายนอก') statusCls = 'bg-amber-100 text-amber-800';
+                else if (r.status === 'จำหน่ายออก') statusCls = 'bg-rose-100 text-rose-800';
+
+                tHtml += `
+                    <div class="flex items-start gap-3 p-3 bg-slate-50 hover:bg-teal-50/40 rounded-xl border border-slate-200/80 transition-colors text-xs">
+                        <div class="mt-0.5 text-base">🛠️</div>
+                        <div class="flex-1 space-y-1">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold font-mono text-teal-800">${r.repairNo || 'ใบซ่อม'}</span>
+                                    <span class="text-slate-400 text-[11px]">📅 ${r.date || '-'}</span>
+                                </div>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${statusCls}">${r.status}</span>
+                            </div>
+                            <div class="text-slate-700 font-medium">${r.symptom || 'ไม่ระบุอาการ'}</div>
+                            <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-200/40">
+                                <span>👷 ช่าง: ${r.assignee || 'ยังไม่ระบุ'}</span>
+                                <span class="font-bold text-slate-700">ค่าใช้จ่าย: ${Number(r.cost || 0).toLocaleString()} ฿</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            timelineEl.innerHTML = tHtml;
+        }
+    }
+
+    // 6. ปุ่มดำเนินการใน Footer
+    const createBtn = document.getElementById('passportCreateRepairBtn');
+    if (createBtn) {
+        createBtn.onclick = () => {
+            closeEquipmentPassportModal();
+            window.createRepairFromParcelItem(item.id);
+        };
+    }
+
+    const editBtn = document.getElementById('passportEditBtn');
+    if (editBtn) {
+        editBtn.onclick = () => {
+            closeEquipmentPassportModal();
+            window.editItem(item.id);
+        };
+    }
+
+    modal.classList.remove('hidden');
+};
+
+window.closeEquipmentPassportModal = function() {
+    document.getElementById('equipmentPassportModal')?.classList.add('hidden');
 };
