@@ -725,6 +725,33 @@ function canModifyRepair(r) {
   return isOwner || isSameDept;
 }
 
+// คำนวณผลรวมค่าใช้จ่ายแยกประเภท (ค่าอะไหล่ + ค่าจ้างเหมา)
+window.calculateTotalRepairCost = function() {
+  const partCost = parseFloat(document.getElementById('formPartCost')?.value) || 0;
+  const laborCost = parseFloat(document.getElementById('formLaborCost')?.value) || 0;
+  const total = partCost + laborCost;
+  const costInput = document.getElementById('formCost');
+  const displayEl = document.getElementById('formCostTotalDisplay');
+  if (costInput) costInput.value = total.toFixed(2);
+  if (displayEl) displayEl.innerText = total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+// สลับโหมดแจ้งซ่อมงานอาคารสถานที่ / สาธารณูปโภค (ไม่มีเลขครุภัณฑ์)
+window.setFacilityRepairMode = function() {
+  const catEl = document.getElementById('formCategory');
+  const codeEl = document.getElementById('formEquipCode');
+  const nameEl = document.getElementById('formEquipName');
+  if (catEl) catEl.value = 'ระบบสาธารณูปโภค';
+  if (codeEl) {
+    codeEl.value = '- (งานอาคาร/ระบบ)';
+    codeEl.classList.add('bg-amber-50', 'text-amber-800');
+  }
+  if (nameEl) {
+    nameEl.placeholder = 'เช่น ประตูห้องน้ำชำรุด, ท่อน้ำอ่างล้างมือรั่ว, หลอดไฟ LED ขาด...';
+    nameEl.focus();
+  }
+};
+
 function openModal() {
   document.getElementById('repairModal').classList.remove('hidden');
   document.getElementById('modalTitle').innerText = 'บันทึกข้อมูลใบส่งซ่อม';
@@ -738,6 +765,11 @@ function openModal() {
   clearRepairDatePicker('formCompletedDate_d', 'formCompletedDate_m', 'formCompletedDate_y', 'formCompletedDate');
   
   document.getElementById('formAssignee').value = '';
+  document.getElementById('formPartCost').value = '0';
+  document.getElementById('formLaborCost').value = '0';
+  document.getElementById('formCost').value = '0';
+  document.getElementById('formPartDetails').value = '';
+  if (document.getElementById('formCostTotalDisplay')) document.getElementById('formCostTotalDisplay').innerText = '0.00';
 
   // เติมอัตโนมัติตามโปรไฟล์ผู้ใช้ปัจจุบัน
   const profile = window.currentUserProfile;
@@ -777,7 +809,13 @@ function editRepair(idx) {
   document.getElementById('formAssignee').value = r.assignee || '';
   document.getElementById('formStatus').value = r.status;
   document.getElementById('formStep').value = r.step || '';
-  document.getElementById('formCost').value = r.cost;
+  document.getElementById('formPartCost').value = r.partCost || 0;
+  document.getElementById('formLaborCost').value = r.laborCost || 0;
+  document.getElementById('formCost').value = r.cost || 0;
+  document.getElementById('formPartDetails').value = r.partDetails || '';
+  if (document.getElementById('formCostTotalDisplay')) {
+    document.getElementById('formCostTotalDisplay').innerText = Number(r.cost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
 }
 
 async function deleteRepair(idx) {
@@ -836,6 +874,9 @@ async function saveRepair(e) {
     assignee: document.getElementById('formAssignee').value.trim() || 'ยังไม่ระบุ',
     status: document.getElementById('formStatus').value,
     step: document.getElementById('formStep').value.trim(),
+    partCost: parseFloat(document.getElementById('formPartCost').value) || 0,
+    laborCost: parseFloat(document.getElementById('formLaborCost').value) || 0,
+    partDetails: document.getElementById('formPartDetails').value.trim(),
     cost: parseFloat(document.getElementById('formCost').value) || 0
   };
 

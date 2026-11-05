@@ -1861,6 +1861,60 @@ document.getElementById('confirmSyncBtn')?.addEventListener('click', confirmPush
 document.getElementById('pullCloudBtn')?.addEventListener('click', () => pullFromCloud(true));
 document.getElementById('syncCloudBtn')?.addEventListener('click', openSyncModal);
 document.getElementById('cancelCloudSyncBtn')?.addEventListener('click', cancelPendingChanges);
+
+// =========================================================================
+// BACKGROUND AUTO-SYNC (อัตโนมัติเมื่อออนไลน์และมีรายการค้าง)
+// =========================================================================
+let isAutoSyncing = false;
+
+async function triggerBackgroundAutoSync() {
+    if (isAutoSyncing || !isFirebaseConfigured || pendingChanges.size === 0) return;
+    if (!navigator.onLine) return;
+
+    isAutoSyncing = true;
+    console.log(`🔄 กำลัง Auto-Sync ข้อมูลพัสดุ ${pendingChanges.size} รายการขึ้น Cloud อัตโนมัติ...`);
+    
+    try {
+        const itemsToPush = currentData.filter(item => pendingChanges.has(item.id));
+        const chunks = [];
+        for (let i = 0; i < itemsToPush.length; i += 400) {
+            chunks.push(itemsToPush.slice(i, i + 400));
+        }
+        for (const chunk of chunks) {
+            const batch = writeBatch(db);
+            chunk.forEach(item => {
+                const isNewLocal = item.id.startsWith('local_');
+                if (isNewLocal) {
+                    pendingChanges.delete(item.id);
+                }
+                const docRef = isNewLocal ? doc(equipCollection) : doc(db, "hospital_equipments", item.id);
+                if (isNewLocal) {
+                    item.id = docRef.id;
+                } else {
+                    pendingChanges.delete(item.id);
+                }
+                const { ...dataPayload } = item;
+                delete dataPayload.id;
+                batch.set(docRef, dataPayload, { merge: true });
+            });
+            await batch.commit();
+        }
+        savePendingChanges();
+        localStorage.setItem('hospital_equipments', JSON.stringify(currentData));
+        updateSyncBadge();
+        console.log(`✅ Auto-Sync พัสดุขึ้น Cloud เรียบร้อย (${itemsToPush.length} รายการ)`);
+    } catch (err) {
+        console.warn('Auto-Sync warning (จะลองใหม่รอบถัดไป):', err);
+    } finally {
+        isAutoSyncing = false;
+    }
+}
+
+// เช็ค Auto-Sync ทุก 30 วินาที และเมื่อเน็ตกลับมาต่อติด (Online Event)
+setInterval(triggerBackgroundAutoSync, 30000);
+window.addEventListener('online', triggerBackgroundAutoSync);
+window.triggerBackgroundAutoSync = triggerBackgroundAutoSync;
+
 // Initial UI Render
 renderForm();
 renderTableHeader();
