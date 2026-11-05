@@ -42,6 +42,9 @@ function setupAuthUI() {
           if (typeof window.renderParcelViews === "function") {
             window.renderParcelViews();
           }
+
+          // 3. Post-Login Redirect: ตรวจสอบว่ามีการสแกน QR ค้างไว้ก่อนล็อกอินหรือไม่
+          checkAndExecutePendingScannedQr();
         }, 50);
       } else {
         window.currentUserProfile = null;
@@ -50,19 +53,54 @@ function setupAuthUI() {
         const scanNoid = urlParams.get('scan_noid');
         const action = urlParams.get('action');
 
-        if (scanNoid && action === 'fast_repair') {
-          // โหมดสแกนส่งซ่อมด่วน: อนุญาตให้ข้าม Gatekeeper เพื่อส่งซ่อมได้ทันที!
-          hideGatekeeper();
-          if (typeof window.switchTab === "function") window.switchTab("repairs");
-          setTimeout(() => {
-            if (typeof window.handleScannedCode === "function") {
-              window.handleScannedCode(scanNoid);
-            }
-          }, 300);
-        } else {
-          showGatekeeper();
+        if (scanNoid) {
+          // จำรหัสเครื่องที่สแกนไว้ใน sessionStorage
+          sessionStorage.setItem('pending_scan_noid', scanNoid);
+          sessionStorage.setItem('pending_scan_action', action || 'fast_repair');
+
+          // แสดงแถบแจ้งเตือนบนหน้าต่างล็อกอิน ให้ผู้ใช้ทราบว่าสแกนเครื่องไหนมา
+          const banner = document.getElementById('pendingScannedQrBanner');
+          const bannerText = document.getElementById('pendingScannedQrCodeText');
+          if (banner && bannerText) {
+            bannerText.innerText = scanNoid;
+            banner.classList.remove('hidden');
+          }
         }
+
+        showGatekeeper();
       }
+    });
+  }
+}
+
+function checkAndExecutePendingScannedQr() {
+  const pendingNoid = sessionStorage.getItem('pending_scan_noid');
+  const pendingAction = sessionStorage.getItem('pending_scan_action');
+
+  if (pendingNoid) {
+    // ล้างค่าที่ค้างออก เพื่อไม่ให้เด้งซ้ำในการรีเฟรชครั้งต่อไป
+    sessionStorage.removeItem('pending_scan_noid');
+    sessionStorage.removeItem('pending_scan_action');
+
+    // ล้างพารามิเตอร์ URL ใน Address Bar เพื่อความสะอาด
+    if (window.history && window.history.replaceState) {
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+
+    // สลับไปแท็บส่งซ่อม และเปิดหน้าต่างแจ้งซ่อมของเครื่องนั้นทันที!
+    if (typeof window.switchTab === "function") {
+      window.switchTab("repairs");
+    }
+
+    // รอฐานข้อมูลพร้อมเล็กน้อย แล้วเปิดหน้าต่างส่งซ่อมด่วน
+    setTimeout(() => {
+      if (typeof window.handleScannedCode === "function") {
+        window.handleScannedCode(pendingNoid);
+      }
+    }, 350);
+  }
+}
     });
   }
 }

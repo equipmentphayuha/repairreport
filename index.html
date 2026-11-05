@@ -76,6 +76,16 @@
         </div>
       </div>
 
+      <!-- Scanned Equipment Pending Banner (แสดงเมื่อสแกน QR ผ่าน LINE/มือถือ แล้วมาติดล็อกอิน) -->
+      <div id="pendingScannedQrBanner" class="hidden m-4 p-3.5 bg-gradient-to-r from-teal-50 to-emerald-50 border-2 border-teal-400 rounded-2xl flex items-center gap-3 text-xs text-teal-950 shadow-sm animate-fade-in">
+        <span class="text-2xl">⚡</span>
+        <div class="flex-1">
+          <div class="font-bold text-teal-900 text-xs">คุณได้สแกน QR Code ครุภัณฑ์:</div>
+          <div class="font-bold font-mono text-teal-700 text-xs mt-0.5" id="pendingScannedQrCodeText">-</div>
+          <div class="text-[11px] text-teal-800 mt-0.5">กรุณาเข้าสู่ระบบ เพื่อเปิดหน้าแจ้งซ่อมของเครื่องนี้ให้อัตโนมัติ</div>
+        </div>
+      </div>
+
       <!-- First Admin Setup Alert Banner (แสดงเฉพาะเมื่อยังไม่มี Admin) -->
       <div id="firstAdminSetupBanner" class="hidden m-4 p-3.5 bg-amber-50 border border-amber-300 rounded-2xl flex items-center justify-between gap-3 text-xs text-amber-950 shadow-sm animate-pulse">
         <div class="flex items-center gap-2.5">
