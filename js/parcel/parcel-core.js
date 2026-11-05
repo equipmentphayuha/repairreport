@@ -1874,7 +1874,7 @@ initImportExport({
 });
 // ─── Bridge: เปิดใบส่งซ่อมจากทะเบียนพัสดุ ──────────────────────────────────
 window.createRepairFromParcelItem = function(itemId) {
-    const item = equipmentData.find(i => i.id === itemId);
+    const item = currentData.find(i => i.id === itemId);
     if (!item) {
         alert('ไม่พบข้อมูลครุภัณฑ์');
         return;
@@ -1910,7 +1910,7 @@ window.createRepairFromParcelItem = function(itemId) {
 };
 // Expose equipmentData ให้ระบบใบส่งซ่อมดึงไปใช้
 window.getParcelEquipmentData = function() {
-    return equipmentData;
+    return currentData;
 };
 // ===== ส่งซ่อมจากหน้าฟอร์มกรอกข้อมูล =====
 const repairCurrentBtn = document.getElementById('repairCurrentBtn');
