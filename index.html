@@ -44,6 +44,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <!-- QRCode.js สำหรับสร้าง QR Code สติกเกอร์ -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
 <body class="bg-slate-50 text-slate-800">
 
@@ -1331,6 +1333,30 @@
             </div>
 
             <div class="p-4 overflow-y-auto flex-1 space-y-4">
+                <!-- Section 0: QR Code Web Address (Base URL Settings) -->
+                <div class="bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200 p-4 rounded-xl shadow-xs space-y-2">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">🌐</span>
+                        <div>
+                            <h4 class="font-bold text-teal-900 text-sm">ที่อยู่เว็บไซต์หลักสำหรับสแกน QR Code (Web Base URL)</h4>
+                            <p class="text-xs text-teal-700">ระบุลิงก์ที่อยู่เว็บสำหรับสร้างลงบน QR Code เมื่อนำมือถือทั่วไปหรือแอป LINE มาสแกน จะเปิดเข้ามายังลิงก์นี้ทันที</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1">
+                        <div class="sm:col-span-9">
+                            <input type="url" id="configWebBaseUrl" placeholder="เช่น https://repirereport.web.app หรือ https://hospital.moph.go.th/repair"
+                                class="w-full border border-teal-300 p-2 rounded-lg text-xs sm:text-sm bg-white font-mono focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                        </div>
+                        <div class="sm:col-span-3 flex gap-1.5">
+                            <button type="button" onclick="window.useCurrentHostAsBaseUrl()"
+                                class="w-full bg-teal-100 hover:bg-teal-200 text-teal-800 border border-teal-300 p-2 rounded-lg text-xs font-semibold transition" title="ดึงที่อยู่เว็บปัจจุบันที่กำลังเปิดอยู่มาใส่ในช่อง">
+                                📍 ใช้ URL ปัจจุบัน
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-500 italic">* หากยังไม่ได้อัปขึ้นโฮสต์จริง สามารถปล่อยว่างหรือกด "ใช้ URL ปัจจุบัน" ไว้ก่อนได้ เมื่อย้ายเว็บขึ้นโฮสต์จริง ค่อยมาแก้ไขช่องนี้ได้ตลอดเวลา</p>
+                </div>
+
                 <!-- Section 1: Add New Field -->
                 <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg">
                     <h4 class="font-bold text-blue-800 mb-2 text-sm">➕ เพิ่มช่องกรอกข้อมูลใหม่ (Add New Field)</h4>
@@ -2502,6 +2528,80 @@
   </div>
 
   <!-- ========================================================================= -->
+  <!-- MODAL: พิมพ์สติกเกอร์ QR Code ครุภัณฑ์ (Print QR Sticker Dialog) -->
+  <!-- ========================================================================= -->
+  <div id="printQrStickerModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-[9999] hidden no-print">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 border border-slate-100">
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-purple-700 via-indigo-800 to-slate-900 text-white p-4 flex items-center justify-between shadow-sm">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">🖨️</span>
+          <div>
+            <h3 class="font-bold text-base leading-tight">ตัวอย่างสติกเกอร์ QR Code</h3>
+            <p class="text-[11px] text-purple-200">สติกเกอร์สำหรับพิมพ์แปะประจำตัวเครื่อง</p>
+          </div>
+        </div>
+        <button type="button" onclick="closePrintQrStickerModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-lg font-bold transition">✕</button>
+      </div>
+
+      <!-- Sticker Preview Area (Printable Box) -->
+      <div class="p-6 bg-slate-100 flex flex-col items-center justify-center">
+        <!-- Physical Sticker Box Container -->
+        <div id="singleStickerContainer" class="bg-white border-2 border-slate-800 rounded-xl p-3.5 shadow-md w-full max-w-[340px] text-slate-800 space-y-2">
+          <!-- Hospital Header -->
+          <div class="flex items-center justify-between border-b border-slate-300 pb-1">
+            <span class="text-[11px] font-bold text-slate-900 flex items-center gap-1">
+              <span>🏥</span> โรงพยาบาลพยุหะคีรี
+            </span>
+            <span id="stickerRiskBadge" class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700">
+              🟢 ทั่วไป
+            </span>
+          </div>
+
+          <!-- Body with QR Code & Metadata -->
+          <div class="flex items-center gap-3">
+            <div id="stickerQrCodeBox" class="shrink-0 bg-white p-1 border border-slate-200 rounded flex items-center justify-center w-[96px] h-[96px]">
+              <!-- QR Image inserted by JS -->
+            </div>
+            <div class="flex-1 space-y-1 text-xs">
+              <div class="font-bold text-slate-900 leading-tight line-clamp-2" id="stickerEquipName">
+                -
+              </div>
+              <div class="font-mono font-bold text-teal-800 text-[11px]" id="stickerNoid">
+                -
+              </div>
+              <div class="text-[10px] text-slate-500" id="stickerDept">
+                แผนก: -
+              </div>
+              <div class="text-[9px] text-indigo-700 font-semibold pt-0.5">
+                📲 สแกนเพื่อส่งซ่อม / ดูประวัติ
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sticker Action Toolbar -->
+      <div class="p-4 bg-white border-t border-slate-200 flex items-center justify-between gap-2">
+        <span class="text-[11px] text-slate-400">ขนาดสติกเกอร์มาตรฐาน (7x4 ซม.)</span>
+        <div class="flex gap-2">
+          <button type="button" onclick="closePrintQrStickerModal()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition">
+            ปิด
+          </button>
+          <button type="button" onclick="window.printSingleSticker()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 transition active:scale-95">
+            <span>🖨️</span> พิมพ์สติกเกอร์นี้
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Printable Hidden Area for Paper Printing -->
+  <div id="printStickerPage" class="hidden">
+    <!-- Populated dynamically when printing -->
+  </div>
+
+  <!-- ========================================================================= -->
   <!-- MODAL: การ์ดข้อมูลสรุปครุภัณฑ์ (Digital Equipment Profile & Passport Card)   -->
   <!-- ========================================================================= -->
   <div id="equipmentPassportModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 z-[9999] hidden no-print overflow-hidden">
@@ -2613,6 +2713,9 @@
         <div class="flex items-center gap-2">
           <button type="button" id="passportCreateRepairBtn" class="bg-teal-600 hover:bg-teal-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition active:scale-95">
             <span>🔧</span> เปิดใบส่งซ่อม
+          </button>
+          <button type="button" id="passportPrintQrBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition active:scale-95" title="พิมพ์สติกเกอร์ QR Code สำหรับติดประจำตัวเครื่อง">
+            <span>🖨️</span> พิมพ์สติกเกอร์ QR
           </button>
           <button type="button" id="passportEditBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition active:scale-95">
             <span>✏️</span> แก้ไขข้อมูล

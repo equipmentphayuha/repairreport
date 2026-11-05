@@ -366,10 +366,27 @@ window.handleFastTrackSubmit = async function(e) {
   }
 
   window.closeFastTrackRepairModal();
-  alert(`✅ แจ้งซ่อมสำเร็จเรียบร้อย!\n\n📋 เลขที่ใบส่งซ่อม: ${repairNo}\n📦 ครุภัณฑ์: ${equipName}\n⚠️ อาการ: ${dataObj.symptom}\n\nระบบส่งเรื่องไปยังทีมช่างเรียบร้อยแล้ว`);
+  
+  // แจ้งเตือนสำเร็จพร้อมถามว่าต้องการพิมพ์ใบส่งซ่อมทันทีหรือไม่
+  const wantPrint = confirm(
+    `✅ แจ้งซ่อมสำเร็จเรียบร้อย!\n\n` +
+    `📋 เลขที่ใบส่งซ่อม: ${repairNo}\n` +
+    `📦 ครุภัณฑ์: ${equipName}\n` +
+    `⚠️ อาการ: ${dataObj.symptom}\n\n` +
+    `คุณต้องการ "พิมพ์ใบส่งซ่อมตัวจริง" ออกมาแนบกับตัวเครื่องทันทีหรือไม่?`
+  );
 
-  // สลับไปหน้ารายการซ่อมเพื่อดูงาน
+  // สลับไปหน้ารายการซ่อม
   if (typeof window.switchTab === 'function') {
     window.switchTab('repairs');
+  }
+
+  // ถ้าต้องการพิมพ์ ให้เปิดหน้าใบส่งซ่อมทันที
+  if (wantPrint) {
+    setTimeout(() => {
+      if (typeof window.previewWorkOrderSlip === 'function') {
+        window.previewWorkOrderSlip(0); // รายการล่าสุดที่เพิ่งเพิ่ม
+      }
+    }, 200);
   }
 };

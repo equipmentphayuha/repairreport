@@ -45,7 +45,23 @@ function setupAuthUI() {
         }, 50);
       } else {
         window.currentUserProfile = null;
-        showGatekeeper();
+        // ตรวจสอบ Deep Link URL จากการสแกน QR ผ่าน LINE/กล้องมือถือ
+        const urlParams = new URLSearchParams(window.location.search);
+        const scanNoid = urlParams.get('scan_noid');
+        const action = urlParams.get('action');
+
+        if (scanNoid && action === 'fast_repair') {
+          // โหมดสแกนส่งซ่อมด่วน: อนุญาตให้ข้าม Gatekeeper เพื่อส่งซ่อมได้ทันที!
+          hideGatekeeper();
+          if (typeof window.switchTab === "function") window.switchTab("repairs");
+          setTimeout(() => {
+            if (typeof window.handleScannedCode === "function") {
+              window.handleScannedCode(scanNoid);
+            }
+          }, 300);
+        } else {
+          showGatekeeper();
+        }
       }
     });
   }

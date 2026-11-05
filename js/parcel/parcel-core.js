@@ -1414,11 +1414,28 @@ if (spreadCurrentBtn) {
         }
     });
 }
-// ===== FIELD CONFIGURATION MODAL =====
+// ===== FIELD CONFIGURATION MODAL & BASE URL SETTINGS =====
 const configModal = document.getElementById('configModal');
+
+window.getParcelBaseUrl = function() {
+    const saved = localStorage.getItem('parcel_qr_base_url');
+    if (saved && saved.trim()) return saved.trim().replace(/\/$/, '');
+    return window.location.origin + window.location.pathname.replace(/\/$/, '');
+};
+
+window.useCurrentHostAsBaseUrl = function() {
+    const current = window.location.origin + window.location.pathname.replace(/\/$/, '');
+    const input = document.getElementById('configWebBaseUrl');
+    if (input) input.value = current;
+};
+
 document.getElementById('openConfigModalBtn').addEventListener('click', () => {
     tempFields = JSON.parse(JSON.stringify(activeFields));
     renderConfigList();
+    const urlInput = document.getElementById('configWebBaseUrl');
+    if (urlInput) {
+        urlInput.value = localStorage.getItem('parcel_qr_base_url') || '';
+    }
     configModal.classList.remove('hidden');
 });
 document.getElementById('closeConfigModalBtn').addEventListener('click', () => configModal.classList.add('hidden'));
@@ -1510,6 +1527,13 @@ document.getElementById('saveConfigBtn').addEventListener('click', async () => {
     });
     activeFields = JSON.parse(JSON.stringify(tempFields));
     localStorage.setItem('field_configurations', JSON.stringify(activeFields));
+
+    // บันทึก Base URL สำหรับ QR Code
+    const baseUrlInput = document.getElementById('configWebBaseUrl');
+    if (baseUrlInput) {
+        localStorage.setItem('parcel_qr_base_url', baseUrlInput.value.trim());
+    }
+
     renderForm();
     renderTableHeader();
     renderDataViews();
@@ -2328,6 +2352,13 @@ window.openEquipmentPassportModal = function(itemId) {
         };
     }
 
+    const printQrBtn = document.getElementById('passportPrintQrBtn');
+    if (printQrBtn) {
+        printQrBtn.onclick = () => {
+            window.openPrintQrStickerModal(item);
+        };
+    }
+
     const editBtn = document.getElementById('passportEditBtn');
     if (editBtn) {
         editBtn.onclick = () => {
@@ -2341,4 +2372,129 @@ window.openEquipmentPassportModal = function(itemId) {
 
 window.closeEquipmentPassportModal = function() {
     document.getElementById('equipmentPassportModal')?.classList.add('hidden');
+};
+
+// =========================================================================
+// QR CODE STICKER GENERATOR & PRINTING
+// =========================================================================
+let currentStickerItem = null;
+
+window.openPrintQrStickerModal = function(item) {
+    if (!item) return;
+    currentStickerItem = item;
+    const modal = document.getElementById('printQrStickerModal');
+    if (!modal) return;
+
+    const noid = item.noid || '-';
+    const name = item.name || '(ไม่มีชื่อรายการ)';
+    const div = item.div || '-';
+    const risk = item.risk || '3';
+
+    document.getElementById('stickerEquipName').innerText = name;
+    document.getElementById('stickerNoid').innerText = `🆔 ${noid}`;
+    document.getElementById('stickerDept').innerText = `แผนก: ${div}`;
+
+    // Risk badge
+    const badgeEl = document.getElementById('stickerRiskBadge');
+    if (badgeEl) {
+        const riskStr = String(risk).trim();
+        if (riskStr === '1' || riskStr.includes('วิกฤต') || (item.type && item.type.includes('แพทย์'))) {
+            badgeEl.className = 'text-[9px] font-bold px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 border border-rose-200';
+            badgeEl.innerText = '🔴 วิกฤต Tier 1';
+        } else if (riskStr === '2' || riskStr.includes('สูง')) {
+            badgeEl.className = 'text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-200';
+            badgeEl.innerText = '🟠 สำคัญ Tier 2';
+        } else {
+            badgeEl.className = 'text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 border border-slate-200';
+            badgeEl.innerText = '🟢 ทั่วไป Tier 3';
+        }
+    }
+
+    // สร้าง Deep Link URL สำหรับสแกนผ่าน LINE / กล้องมือถือ
+    const baseUrl = (typeof window.getParcelBaseUrl === 'function') ? window.getParcelBaseUrl() : window.location.origin;
+    const encodedNoid = encodeURIComponent(noid);
+    const deepLinkUrl = `${baseUrl}?scan_noid=${encodedNoid}&action=fast_repair`;
+
+    // Render QR Code ลงในกล่อง
+    const qrContainer = document.getElementById('stickerQrCodeBox');
+    if (qrContainer) {
+        qrContainer.innerHTML = '';
+        if (typeof QRCode !== 'undefined') {
+            new QRCode(qrContainer, {
+                text: deepLinkUrl,
+                width: 90,
+                height: 90,
+                colorDark: "#0f172a",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        } else {
+            qrContainer.innerHTML = `<span class="text-[10px] text-slate-400">QR Code Error</span>`;
+        }
+    }
+
+    modal.classList.remove('hidden');
+};
+
+window.closePrintQrStickerModal = function() {
+    document.getElementById('printQrStickerModal')?.classList.add('hidden');
+};
+
+window.printSingleSticker = function() {
+    const stickerEl = document.getElementById('singleStickerContainer');
+    if (!stickerEl) return;
+
+    // สร้างหน้าต่างพิมพ์เฉพาะสติกเกอร์
+    const printWindow = window.open('', '_blank', 'width=500,height=400');
+    if (!printWindow) {
+        return alert('กรุณาอนุญาตป๊อปอัป (Pop-up) เพื่อพิมพ์สติกเกอร์');
+    }
+
+    const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>พิมพ์สติกเกอร์ QR Code</title>
+            <style>
+                @page { size: auto; margin: 5mm; }
+                body { font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 10px; display: flex; justify-content: center; align-items: center; }
+                .sticker-box {
+                    width: 72mm;
+                    border: 2px solid #0f172a;
+                    border-radius: 8px;
+                    padding: 8px 10px;
+                    box-sizing: border-box;
+                    background: #fff;
+                }
+                .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 6px; }
+                .h-title { font-size: 11px; font-weight: bold; color: #0f172a; }
+                .badge { font-size: 9px; font-weight: bold; padding: 1px 4px; border-radius: 4px; background: #f1f5f9; }
+                .content { display: flex; gap: 8px; align-items: center; }
+                .qr-box { width: 85px; height: 85px; flex-shrink: 0; }
+                .qr-box img { width: 100%; height: 100%; display: block; }
+                .meta { flex: 1; font-size: 10px; line-height: 1.35; color: #1e293b; }
+                .name { font-weight: bold; font-size: 11px; margin-bottom: 2px; }
+                .noid { font-family: monospace; font-weight: bold; color: #0d9488; }
+                .dept { color: #64748b; font-size: 9px; margin-top: 2px; }
+                .scan-hint { font-size: 8.5px; font-weight: bold; color: #4338ca; margin-top: 3px; }
+            </style>
+        </head>
+        <body>
+            <div class="sticker-box">
+                ${stickerEl.innerHTML}
+            </div>
+            <script>
+                window.onload = function() {
+                    window.print();
+                    setTimeout(() => window.close(), 500);
+                };
+            </script>
+        </body>
+        </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
 };
