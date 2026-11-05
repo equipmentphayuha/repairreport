@@ -1493,10 +1493,14 @@ window.executePrintExecutiveReport = executePrintExecutiveReport;
 function analyzeDisposalAndBreakEven(repairsList = repairs) {
   // ดึงรายการพัสดุจาก local storage หรือตัวแปรระบบ
   let parcelItems = [];
-  try {
-    const raw = localStorage.getItem('hospital_equipments_data');
-    if (raw) parcelItems = JSON.parse(raw);
-  } catch (_) {}
+  if (typeof window.AppStore !== 'undefined') {
+    parcelItems = window.AppStore.getEquipments();
+  } else {
+    try {
+      const raw = localStorage.getItem('hospital_equipments') || localStorage.getItem('hospital_equipments_data');
+      if (raw) parcelItems = JSON.parse(raw);
+    } catch (_) {}
+  }
 
   const parcelPriceMap = {};
   parcelItems.forEach(p => {
