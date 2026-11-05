@@ -507,6 +507,10 @@ function renderTableBody() {
             window.openEquipmentPassportModal(item.id);
         });
         let rowHtml = '';
+        const currentUser = window.currentUserProfile || {};
+        const userRole = currentUser.role || 'general_user';
+        const canViewFinancials = (userRole === 'admin' || userRole === 'executive' || userRole === 'parcel_staff');
+
         activeFields.forEach(f => {
             let val = item[f.key] !== undefined ? item[f.key] : (f.key === 'tmoney' && item['money'] !== undefined ? item['money'] : '');
             if (f.key === 'risk' && val) {
@@ -514,10 +518,26 @@ function renderTableBody() {
                 if (m) val = m[0];
             }
             let displayVal = val || '-';
-            if (val !== '' && (f.type === 'number' || f.key === 'perUnit')) {
+
+            // ซ่อนราคาจัดซื้อสำหรับผู้ใช้ทั่วไป
+            if ((f.key === 'perUnit' || f.key === 'tmoney' || f.key === 'money') && !canViewFinancials) {
+                displayVal = '<span class="text-slate-400 italic">***</span>';
+            } else if (val !== '' && (f.type === 'number' || f.key === 'perUnit')) {
                 const n = Number(String(val).replace(/,/g, ''));
                 if (!isNaN(n)) displayVal = n.toLocaleString('en-US', { maximumFractionDigits: 2 });
             }
+
+            // แสดง Criticality Tag สวยงามในคอลัมน์ risk
+            if (f.key === 'risk' && val) {
+                if (val === '1' || String(val).includes('วิกฤต')) {
+                    displayVal = '<span class="bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded-full text-[10px]">🔴 วิกฤต Tier 1</span>';
+                } else if (val === '2' || String(val).includes('สูง')) {
+                    displayVal = '<span class="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full text-[10px]">🟠 สำคัญ Tier 2</span>';
+                } else {
+                    displayVal = '<span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full text-[10px]">🟢 ทั่วไป Tier 3</span>';
+                }
+            }
+
             const cellClass = f.key === 'name' ? 'cell-name' : (f.key === 'location' ? 'cell-location' : (f.key === 'div' ? 'cell-div' : (f.key === 'type' ? 'cell-type' : '')));
             
             rowHtml += `<td class="p-2.5 border text-xs whitespace-nowrap ${cellClass}" title="${String(val || '')}">${displayVal}</td>`;
@@ -561,9 +581,17 @@ function renderMobileCards() {
         const div = item.div || '-';
         const receiveTm = item.receiveTm || '-';
         let perUnit = '-';
-        if (item.perUnit !== undefined && item.perUnit !== '') {
-            const n = Number(String(item.perUnit).replace(/,/g, ''));
-            perUnit = (!isNaN(n) ? n.toLocaleString('en-US', { maximumFractionDigits: 2 }) : item.perUnit) + ' บาท';
+        const currentUser = window.currentUserProfile || {};
+        const userRole = currentUser.role || 'general_user';
+        const canViewFinancials = (userRole === 'admin' || userRole === 'executive' || userRole === 'parcel_staff');
+
+        if (canViewFinancials) {
+            if (item.perUnit !== undefined && item.perUnit !== '') {
+                const n = Number(String(item.perUnit).replace(/,/g, ''));
+                perUnit = (!isNaN(n) ? n.toLocaleString('en-US', { maximumFractionDigits: 2 }) : item.perUnit) + ' บาท';
+            }
+        } else {
+            perUnit = '*** สงวนสิทธิ์ ***';
         }
         const location = item.location || '-';
         let fieldsHtml = '';
@@ -577,9 +605,16 @@ function renderMobileCards() {
                     if (m) val = m[0];
                 }
                 let displayVal = val;
-                if (f.type === 'number' || f.key === 'perUnit') {
+                if ((f.key === 'perUnit' || f.key === 'tmoney' || f.key === 'money') && !canViewFinancials) {
+                    displayVal = '***';
+                } else if (f.type === 'number' || f.key === 'perUnit') {
                     const n = Number(String(val).replace(/,/g, ''));
                     if (!isNaN(n)) displayVal = n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+                }
+                if (f.key === 'risk' && val) {
+                    if (val === '1' || String(val).includes('วิกฤต')) displayVal = '🔴 วิกฤต Tier 1';
+                    else if (val === '2' || String(val).includes('สูง')) displayVal = '🟠 สำคัญ Tier 2';
+                    else displayVal = '🟢 ทั่วไป Tier 3';
                 }
                 fieldsHtml += `
                     <div class="flex justify-between text-xs py-0.5 border-b border-gray-100 last:border-b-0">
@@ -2132,9 +2167,29 @@ window.openEquipmentPassportModal = function(itemId) {
     document.getElementById('passportDiv').innerText = div;
     document.getElementById('passportType').innerText = type;
     document.getElementById('passportLocation').innerText = location;
-    document.getElementById('passportPerUnit').innerText = perUnitRaw > 0 ? `${perUnitRaw.toLocaleString()} ฿` : '-';
-    document.getElementById('passportMoneyType').innerText = moneyType;
-    document.getElementById('passportRisk').innerText = risk;
+
+    // การควบคุมสิทธิ์ (Data Privacy): ซ่อนราคาและค่าเสื่อมสำหรับ general_user
+    const currentUser = window.currentUserProfile || {};
+    const userRole = currentUser.role || 'general_user';
+    const canViewFinancials = (userRole === 'admin' || userRole === 'executive' || userRole === 'parcel_staff');
+
+    if (canViewFinancials) {
+        document.getElementById('passportPerUnit').innerText = perUnitRaw > 0 ? `${perUnitRaw.toLocaleString()} ฿` : '-';
+        document.getElementById('passportMoneyType').innerText = moneyType;
+    } else {
+        document.getElementById('passportPerUnit').innerHTML = '<span class="text-slate-400 font-mono italic">*** สงวนสิทธิ์ ***</span>';
+        document.getElementById('passportMoneyType').innerHTML = '<span class="text-slate-400 font-mono italic">*** สงวนสิทธิ์ ***</span>';
+    }
+
+    // Criticality / Risk Badge
+    const riskStr = String(risk).trim();
+    let riskBadgeHtml = `<span class="text-slate-600">🟢 ทั่วไป (Tier 3)</span>`;
+    if (riskStr === '1' || riskStr.includes('วิกฤต') || type.includes('แพทย์')) {
+        riskBadgeHtml = `<span class="bg-rose-500/20 text-rose-700 border border-rose-300 px-2 py-0.5 rounded-full font-bold animate-pulse">🔴 วิกฤตช่วยชีวิต (Tier 1)</span>`;
+    } else if (riskStr === '2' || riskStr.includes('สูง')) {
+        riskBadgeHtml = `<span class="bg-amber-500/20 text-amber-800 border border-amber-300 px-2 py-0.5 rounded-full font-bold">🟠 สำคัญสูง (Tier 2)</span>`;
+    }
+    document.getElementById('passportRisk').innerHTML = riskBadgeHtml;
 
     // 2. คำนวณอายุและค่าเสื่อมราคา
     const depr = calculateDepreciation(item);
@@ -2145,12 +2200,17 @@ window.openEquipmentPassportModal = function(itemId) {
         const months = Math.round((depr.ageYears - years) * 12);
         document.getElementById('passportAgeYears').innerText = years > 0 ? `${years} ปี ${months} ด.` : `${months} เดือน`;
         
-        if (depr.isFullyDepreciated) {
-            document.getElementById('passportDeprStatus').innerHTML = `<span class="text-slate-600">ครบเกณฑ์ (1 ฿)</span>`;
-            document.getElementById('passportNetBookValue').innerText = `มูลค่าซาก: 1 บาท (ครบ ${depr.usefulYears} ปี)`;
+        if (canViewFinancials) {
+            if (depr.isFullyDepreciated) {
+                document.getElementById('passportDeprStatus').innerHTML = `<span class="text-slate-600">ครบเกณฑ์ (1 ฿)</span>`;
+                document.getElementById('passportNetBookValue').innerText = `มูลค่าซาก: 1 บาท (ครบ ${depr.usefulYears} ปี)`;
+            } else {
+                document.getElementById('passportDeprStatus').innerHTML = `<span class="text-emerald-700">คงเหลือ ${depr.remainPct}%</span>`;
+                document.getElementById('passportNetBookValue').innerText = `มูลค่าบัญชี: ${depr.bookValue.toLocaleString()} ฿`;
+            }
         } else {
-            document.getElementById('passportDeprStatus').innerHTML = `<span class="text-emerald-700">คงเหลือ ${depr.remainPct}%</span>`;
-            document.getElementById('passportNetBookValue').innerText = `มูลค่าบัญชี: ${depr.bookValue.toLocaleString()} ฿`;
+            document.getElementById('passportDeprStatus').innerHTML = '<span class="text-slate-400 italic">*** ข้อมูลการเงินสงวนสิทธิ์ ***</span>';
+            document.getElementById('passportNetBookValue').innerText = 'เฉพาะผู้บริหารและการเงิน/พัสดุ';
         }
     } else {
         document.getElementById('passportAgeYears').innerText = '-';

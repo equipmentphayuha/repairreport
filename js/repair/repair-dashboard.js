@@ -298,6 +298,33 @@ function renderDashboard() {
     }
   });
 
+  // วิเคราะห์แนวโน้มฤดูกาล (Seasonality & Trend Insights)
+  const seasonEl = document.getElementById('seasonalityText');
+  if (seasonEl) {
+    if (sortedKeys.length >= 2) {
+      const lastKey = sortedKeys[sortedKeys.length - 1];
+      const prevKey = sortedKeys[sortedKeys.length - 2];
+      const lastCount = groupData[lastKey]?.count || 0;
+      const prevCount = groupData[prevKey]?.count || 0;
+      const diffPct = prevCount > 0 ? Math.round(((lastCount - prevCount) / prevCount) * 100) : 0;
+      
+      let trendIcon = '➡️';
+      let trendWord = 'ทรงตัว';
+      if (diffPct > 0) {
+        trendIcon = '📈';
+        trendWord = `เพิ่มขึ้น +${diffPct}% จากช่วงก่อนหน้า`;
+      } else if (diffPct < 0) {
+        trendIcon = '📉';
+        trendWord = `ลดลง ${diffPct}% จากช่วงก่อนหน้า`;
+      }
+      seasonEl.innerHTML = `${trendIcon} ${lastKey}: <strong>${lastCount} ครั้ง</strong> (${trendWord})`;
+    } else if (sortedKeys.length === 1) {
+      seasonEl.innerHTML = `📊 ข้อมูลช่วงล่าสุด: <strong>${groupData[sortedKeys[0]].count} ครั้ง</strong>`;
+    } else {
+      seasonEl.innerHTML = `ยังไม่มีข้อมูลเพียงพอสำหรับประเมินแนวโน้ม`;
+    }
+  }
+
   // กราฟสัดส่วนประเภท
   const categoryCosts = {};
   filteredRepairs.forEach(r => {
