@@ -2552,3 +2552,352 @@ window.printSingleSticker = function() {
     printWindow.document.write(htmlContent);
     printWindow.document.close();
 };
+
+// =========================================================================
+// BATCH QR STICKER PRINTING (A4 SHEET)
+// =========================================================================
+let batchSelectedIds = new Set();
+
+window.openBatchQrStickerModal = function() {
+    const modal = document.getElementById('batchQrStickerModal');
+    if (!modal) return;
+
+    // เติมรายชื่อแผนกในตัวกรอง
+    const deptSelect = document.getElementById('batchStickerDeptSelect');
+    if (deptSelect) {
+        const divs = Array.from(new Set(currentData.map(i => (i.div || '').trim()).filter(Boolean))).sort();
+        deptSelect.innerHTML = `<option value="">🏢 ทุกกลุ่มงาน / ทุกแผนก (${currentData.length} รายการ)</option>` +
+            divs.map(d => `<option value="${d}">${d}</option>`).join('');
+    }
+
+    // เลือกรายการเริ่มต้นทั้งหมดตามการกรองปัจจุบัน
+    batchSelectedIds = new Set(currentData.map(i => i.id));
+    renderBatchStickerList();
+
+    modal.classList.remove('hidden');
+};
+
+window.closeBatchQrStickerModal = function() {
+    document.getElementById('batchQrStickerModal')?.classList.add('hidden');
+};
+
+window.renderBatchStickerList = function() {
+    const container = document.getElementById('batchStickerItemsContainer');
+    if (!container) return;
+
+    const deptVal = (document.getElementById('batchStickerDeptSelect')?.value || '').trim().toLowerCase();
+    const query = (document.getElementById('batchStickerSearchInput')?.value || '').trim().toLowerCase();
+
+    const filtered = currentData.filter(item => {
+        const d = (item.div || '').toLowerCase();
+        const n = (item.name || '').toLowerCase();
+        const noid = (item.noid || '').toLowerCase();
+        if (deptVal && d !== deptVal) return false;
+        if (query && !n.includes(query) && !noid.includes(query)) return false;
+        return true;
+    });
+
+    if (filtered.length === 0) {
+        container.innerHTML = `
+            <div class="p-8 text-center text-slate-400 text-xs">
+                ไม่พบรายการครุภัณฑ์ที่ตรงกับเงื่อนไข
+            </div>
+        `;
+        updateBatchCountSummary();
+        return;
+    }
+
+    container.innerHTML = filtered.map(item => {
+        const isChecked = batchSelectedIds.has(item.id);
+        const noid = item.noid || '-';
+        const name = item.name || '(ไม่มีชื่อรายการ)';
+        const div = item.div || '-';
+        const risk = item.risk || '3';
+        
+        let riskBadge = '<span class="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">ทั่วไป</span>';
+        if (risk === '1' || String(risk).includes('วิกฤต') || (item.type && item.type.includes('แพทย์'))) {
+            riskBadge = '<span class="text-[9px] bg-rose-100 text-rose-700 font-bold px-1.5 py-0.5 rounded">🔴 Tier 1</span>';
+        } else if (risk === '2' || String(risk).includes('สูง')) {
+            riskBadge = '<span class="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded">🟠 Tier 2</span>';
+        }
+
+        return `
+            <label class="flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 hover:bg-purple-50/50 transition cursor-pointer ${isChecked ? 'bg-purple-50/80 border-purple-300' : 'bg-white'}">
+                <input type="checkbox" onchange="toggleBatchItemCheck('${item.id}', this.checked)" ${isChecked ? 'checked' : ''} class="w-4 h-4 text-purple-600 rounded">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-slate-800 text-xs truncate">${name}</span>
+                        ${riskBadge}
+                    </div>
+                    <div class="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
+                        <span class="font-mono font-bold text-teal-800">🆔 ${noid}</span>
+                        <span>•</span>
+                        <span>🏢 ${div}</span>
+                    </div>
+                </div>
+            </label>
+        `;
+    }).join('');
+
+    updateBatchCountSummary();
+};
+
+window.toggleBatchItemCheck = function(id, isChecked) {
+    if (isChecked) batchSelectedIds.add(id);
+    else batchSelectedIds.delete(id);
+    updateBatchCountSummary();
+};
+
+window.selectAllBatchStickers = function(selectAll) {
+    const deptVal = (document.getElementById('batchStickerDeptSelect')?.value || '').trim().toLowerCase();
+    const query = (document.getElementById('batchStickerSearchInput')?.value || '').trim().toLowerCase();
+
+    const filtered = currentData.filter(item => {
+        const d = (item.div || '').toLowerCase();
+        const n = (item.name || '').toLowerCase();
+        const noid = (item.noid || '').toLowerCase();
+        if (deptVal && d !== deptVal) return false;
+        if (query && !n.includes(query) && !noid.includes(query)) return false;
+        return true;
+    });
+
+    if (selectAll) {
+        filtered.forEach(i => batchSelectedIds.add(i.id));
+    } else {
+        filtered.forEach(i => batchSelectedIds.delete(i.id));
+    }
+    renderBatchStickerList();
+};
+
+function updateBatchCountSummary() {
+    const countEl = document.getElementById('batchSelectedCount');
+    const pagesEl = document.getElementById('batchEstimatedPages');
+    const layout = document.getElementById('batchStickerLayoutSelect')?.value || '2x6';
+    const perPage = (layout === '3x8') ? 24 : 12;
+
+    const count = batchSelectedIds.size;
+    if (countEl) countEl.innerText = count.toLocaleString();
+    if (pagesEl) pagesEl.innerText = Math.ceil(count / perPage).toLocaleString();
+}
+
+window.executeBatchQrPrint = async function() {
+    const selectedItems = currentData.filter(i => batchSelectedIds.has(i.id));
+    if (selectedItems.length === 0) {
+        return alert('กรุณาเลือกรายการครุภัณฑ์อย่างน้อย 1 รายการเพื่อพิมพ์สติกเกอร์');
+    }
+
+    const layout = document.getElementById('batchStickerLayoutSelect')?.value || '2x6';
+    const is3x8 = (layout === '3x8');
+    const baseUrl = (typeof window.getParcelBaseUrl === 'function') ? window.getParcelBaseUrl() : window.location.origin;
+
+    const btn = document.getElementById('batchPrintBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ กำลังสร้างหน้าพิมพ์...';
+    }
+
+    // สร้าง QR Code เป็น Data URI แบบชั่วคราว
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<span>🖨️</span> <span>เปิดหน้าต่างพิมพ์ชุด A4</span>'; }
+        return alert('กรุณาอนุญาตป๊อปอัป (Pop-up) เพื่อพิมพ์สติกเกอร์');
+    }
+
+    // สร้าง HTML สติกเกอร์แต่ละชิ้น
+    let stickersHtml = '';
+    selectedItems.forEach((item, idx) => {
+        const noid = item.noid || '-';
+        const name = item.name || '(ไม่มีชื่อรายการ)';
+        const div = item.div || '-';
+        const risk = item.risk || '3';
+        const encodedNoid = encodeURIComponent(noid);
+        const deepLinkUrl = `${baseUrl}?scan_noid=${encodedNoid}&action=fast_repair`;
+
+        // สร้าง QR code ผ่าน Google Chart API หรือ QRCode.js image
+        const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=0&data=${encodeURIComponent(deepLinkUrl)}`;
+
+        let riskBadge = '🟢 ทั่วไป';
+        if (risk === '1' || String(risk).includes('วิกฤต') || (item.type && item.type.includes('แพทย์'))) {
+            riskBadge = '🔴 Tier 1';
+        } else if (risk === '2' || String(risk).includes('สูง')) {
+            riskBadge = '🟠 Tier 2';
+        }
+
+        stickersHtml += `
+            <div class="sticker-card">
+                <div class="card-header">
+                    <span class="hospital-name">🏥 รพ.พยุหะคีรี</span>
+                    <span class="risk-pill">${riskBadge}</span>
+                </div>
+                <div class="card-body">
+                    <div class="qr-col">
+                        <img src="${qrImgUrl}" alt="QR" class="qr-img" />
+                    </div>
+                    <div class="info-col">
+                        <div class="equip-name">${name}</div>
+                        <div class="equip-noid">${noid}</div>
+                        <div class="equip-dept">${div}</div>
+                        <div class="scan-tag">📲 สแกนส่งซ่อม</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    const docContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>พิมพ์สติกเกอร์ QR Code (${selectedItems.length} รายการ)</title>
+            <style>
+                @page {
+                    size: A4 portrait;
+                    margin: 8mm 6mm;
+                }
+                * { box-sizing: border-box; }
+                body {
+                    font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    background: #fff;
+                    color: #0f172a;
+                }
+                .sheet-grid {
+                    display: grid;
+                    grid-template-columns: ${is3x8 ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)'};
+                    gap: 3.5mm 3mm;
+                    page-break-after: always;
+                }
+                .sticker-card {
+                    border: 1.5px solid #1e293b;
+                    border-radius: 6px;
+                    padding: 5px 6px;
+                    background: #fff;
+                    height: ${is3x8 ? '33mm' : '44mm'};
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
+                    overflow: hidden;
+                }
+                .card-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    border-bottom: 1px solid #cbd5e1;
+                    padding-bottom: 2px;
+                    margin-bottom: 3px;
+                }
+                .hospital-name {
+                    font-size: 8.5pt;
+                    font-weight: bold;
+                    color: #0f172a;
+                }
+                .risk-pill {
+                    font-size: 7pt;
+                    font-weight: bold;
+                    padding: 1px 4px;
+                    border-radius: 3px;
+                    background: #f1f5f9;
+                }
+                .card-body {
+                    display: flex;
+                    gap: 5px;
+                    align-items: center;
+                    flex: 1;
+                }
+                .qr-col {
+                    width: ${is3x8 ? '23mm' : '30mm'};
+                    height: ${is3x8 ? '23mm' : '30mm'};
+                    flex-shrink: 0;
+                }
+                .qr-img {
+                    width: 100%;
+                    height: 100%;
+                    display: block;
+                    object-fit: contain;
+                }
+                .info-col {
+                    flex: 1;
+                    min-width: 0;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    line-height: 1.25;
+                }
+                .equip-name {
+                    font-size: ${is3x8 ? '7.5pt' : '9pt'};
+                    font-weight: bold;
+                    color: #0f172a;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                .equip-noid {
+                    font-family: monospace;
+                    font-size: ${is3x8 ? '7.5pt' : '8.5pt'};
+                    font-weight: bold;
+                    color: #0d9488;
+                    margin: 1px 0;
+                    word-break: break-all;
+                }
+                .equip-dept {
+                    font-size: ${is3x8 ? '6.5pt' : '7.5pt'};
+                    color: #475569;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                .scan-tag {
+                    font-size: ${is3x8 ? '6pt' : '7pt'};
+                    color: #4338ca;
+                    font-weight: bold;
+                    margin-top: 1px;
+                }
+                .no-print-bar {
+                    background: #f8fafc;
+                    border-bottom: 1px solid #e2e8f0;
+                    padding: 10px 15px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    font-size: 13px;
+                }
+                .print-btn {
+                    background: #7c3aed;
+                    color: #fff;
+                    border: none;
+                    padding: 8px 18px;
+                    border-radius: 8px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    font-family: inherit;
+                }
+                @media print {
+                    .no-print-bar { display: none !important; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="no-print-bar">
+                <div>
+                    <strong>🏷️ พร้อมพิมพ์สติกเกอร์ QR Code:</strong> รวม ${selectedItems.length} รายการ (กระดาษ A4)
+                </div>
+                <button class="print-btn" onclick="window.print()">🖨️ กดพิมพ์หน้านี้ (Print)</button>
+            </div>
+            <div class="sheet-grid">
+                ${stickersHtml}
+            </div>
+        </body>
+        </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(docContent);
+    printWindow.document.close();
+
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<span>🖨️</span> <span>เปิดหน้าต่างพิมพ์ชุด A4</span>';
+    }
+};
