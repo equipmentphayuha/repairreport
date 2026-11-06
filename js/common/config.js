@@ -42,7 +42,7 @@ export const defaultParcelFields = [
   {
     key: 'div',
     label: 'Div (แผนก)',
-    type: 'combo',
+    type: 'select',
     options: [
       'ซ่อมเครื่องมือทั่วไป',
       'ศูนย์เครื่องมือแพทย์',
@@ -67,13 +67,13 @@ export const defaultParcelFields = [
       'แผนกการแพทย์แผนไทย',
       'กลุ่มงานเวชศาสตร์ฟื้นฟู'
     ],
-    description: 'หน่วยงานหรือแผนกที่ครอบครอง (เลือกหรือพิมพ์เอง)',
+    description: 'หน่วยงานหรือแผนกที่ครอบครอง (เลือกจากตัวเลือก)',
     required: true
   },
   {
     key: 'type',
     label: 'TYPE (ประเภท)',
-    type: 'combo',
+    type: 'select',
     options: [
       'ครุภัณฑ์การแพทย์',
       'ครุภัณฑ์คอมพิวเตอร์',
@@ -88,7 +88,7 @@ export const defaultParcelFields = [
       'ครุภัณฑ์วิทยาศาสตร์',
       'ครุภัณฑ์อื่นๆ'
     ],
-    description: 'ประเภทครุภัณฑ์ (เลือกหรือพิมพ์เอง)',
+    description: 'ประเภทครุภัณฑ์ (เลือกจากตัวเลือก)',
     required: false
   },
   { key: 'usefulLife', label: 'อายุใช้งาน (ปี)', type: 'number', description: 'อายุการใช้งานตามเกณฑ์มาตรฐาน (ปี) เพื่อคิดค่าเสื่อม', required: false },
@@ -103,25 +103,25 @@ export const defaultParcelFields = [
   {
     key: 'kind',
     label: 'KIND (ประเภทเครื่องมือ)',
-    type: 'combo',
+    type: 'select',
     options: [
       'เครื่องมือช่วยชีวิต',
       'เครื่องมือช่วยวินิจฉัย',
       'เครื่องมือเพื่อการรักษา',
       'เครื่องมือสนับสนุน'
     ],
-    description: 'ประเภทเครื่องมือ (เลือกหรือพิมพ์เอง)',
+    description: 'ประเภทเครื่องมือ (เลือกจากตัวเลือก)',
     required: false
   },
   {
     key: 'risk',
     label: 'Risk (ระดับความเสี่ยง)',
-    type: 'combo',
+    type: 'select',
     options: ['1', '2', '3'],
-    description: 'ระดับความเสี่ยง 1-3 (เลือกหรือพิมพ์เอง)',
+    description: 'ระดับความเสี่ยง 1-3 (เลือกจากตัวเลือก)',
     required: false
   },
-  { key: 'remark', label: 'หมายเหตุ (สถานะ)', type: 'combo', options: ['พร้อมใช้', 'ไม่พร้อมใช้', 'จำหน่ายแล้ว'], description: 'สถานะความพร้อมใช้งานปัจจุบัน', required: false },
+  { key: 'remark', label: 'หมายเหตุ (สถานะ)', type: 'select', options: ['พร้อมใช้งาน', 'ไม่พร้อมใช้', 'ชำรุดรอซ่อม', 'จำหน่ายแล้ว'], description: 'สถานะความพร้อมใช้งานปัจจุบัน', required: false },
   { key: 'newDate', label: 'New Date', type: 'number', description: 'ปีหรือรอบการลงทะเบียน', required: false },
   { key: 'pasaduId', label: 'Pasadu ID', type: 'text', description: 'เลข RMC เดิม', required: false }
 ];

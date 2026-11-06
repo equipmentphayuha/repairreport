@@ -172,6 +172,71 @@ export function normalizeThaiDate(rawDate) {
         return `${day}/${month}/${year}`;
     }
 
+    // 5. Smart Thai Text Date Normalizer (e.g. 'มีค 51', 'ธค 41', 'พ.ศ. 2554', 'ปี 64', '2558', '64')
+    return cleanThaiReceiveDate(str);
+}
+
+// Helper: แปลงข้อความวันที่แบบย่อ/พ.ศ. ให้เป็น วว/ดด/ปปปป (พ.ศ.)
+export function cleanThaiReceiveDate(raw) {
+    if (!raw) return '';
+    let str = String(raw).trim();
+    if (!str) return '';
+
+    // รูปแบบมาตรฐาน DD/MM/YYYY อยู่แล้ว
+    const stdMatch = str.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+    if (stdMatch) {
+        let d = String(parseInt(stdMatch[1], 10)).padStart(2, '0');
+        let m = String(parseInt(stdMatch[2], 10)).padStart(2, '0');
+        let y = parseInt(stdMatch[3], 10);
+        if (y < 2400) y += 543;
+        return `${d}/${m}/${y}`;
+    }
+
+    const thaiMonths = {
+        'ม.ค': '01', 'มค': '01', 'มกรา': '01',
+        'ก.พ': '02', 'กพ': '02', 'กุมภา': '02',
+        'มี.ค': '03', 'มีค': '03', 'มีนา': '03', 'มึ.ค': '03',
+        'เม.ย': '04', 'เมย': '04', 'เมษา': '04', 'เ.ม.ย': '04',
+        'พ.ค': '05', 'พค': '05', 'พฤษภา': '05',
+        'มิ.ย': '06', 'มิย': '06', 'มิถุนา': '06',
+        'ก.ค': '07', 'กค': '07', 'กรกฎา': '07',
+        'ส.ค': '08', 'สค': '08', 'สิงหา': '08',
+        'ก.ย': '09', 'กย': '09', 'กันยา': '09',
+        'ต.ค': '10', 'ตค': '10', 'ตุลา': '10',
+        'พ.ย': '11', 'พย': '11', 'พฤศจิกา': '11',
+        'ธ.ค': '12', 'ธค': '12', 'ธันวา': '12'
+    };
+
+    const lower = str.toLowerCase();
+    for (const [mName, mNum] of Object.entries(thaiMonths)) {
+        if (lower.includes(mName)) {
+            const nums = str.match(/\d+/g);
+            if (nums && nums.length > 0) {
+                let yr = parseInt(nums[nums.length - 1], 10);
+                if (yr < 100) yr = 2500 + yr;
+                else if (yr < 2400) yr = yr + 543;
+                let day = '01';
+                if (nums.length >= 2) {
+                    let potentialDay = parseInt(nums[0], 10);
+                    if (potentialDay >= 1 && potentialDay <= 31) {
+                        day = String(potentialDay).padStart(2, '0');
+                    }
+                }
+                return `${day}/${mNum}/${yr}`;
+            }
+        }
+    }
+
+    // มีเฉพาะตัวเลข หรือมีคำนำหน้า เช่น 'พ.ศ. 2554', 'ปี 64', 'ปี39', '2558', '64'
+    const cleanStr = str.replace(/[พศปี\.\s\-]/g, '');
+    const numOnlyMatch = cleanStr.match(/^(\d{2}|\d{4})$/);
+    if (numOnlyMatch) {
+        let yr = parseInt(numOnlyMatch[1], 10);
+        if (yr < 100) yr = 2500 + yr;
+        else if (yr < 2400) yr = yr + 543;
+        return `01/01/${yr}`;
+    }
+
     return str;
 }
 

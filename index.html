@@ -1164,6 +1164,22 @@
                 class="bg-blue-50 border border-blue-300 text-blue-700 px-3 py-2 rounded-xl shadow-sm text-xs sm:text-sm hover:bg-blue-100 flex items-center justify-center gap-1 font-semibold transition" title="ดึงข้อมูลล่าสุดจาก Cloud ลงมาเก็บในเครื่อง">
                 📥 <span>ดึงจาก Cloud</span>
             </button>
+            <button id="setAllReadyBtn"
+                class="bg-emerald-50 border border-emerald-300 text-emerald-800 px-3 py-2 rounded-xl shadow-sm text-xs sm:text-sm hover:bg-emerald-100 flex items-center justify-center gap-1 font-semibold transition" title="ปรับสถานะครุภัณฑ์ทั้งหมดเป็น 'พร้อมใช้งาน' ทันที">
+                ✅ <span>ปรับพร้อมใช้งานทั้งหมด</span>
+            </button>
+            <button id="setAllSupportBtn"
+                class="bg-indigo-50 border border-indigo-300 text-indigo-800 px-3 py-2 rounded-xl shadow-sm text-xs sm:text-sm hover:bg-indigo-100 flex items-center justify-center gap-1 font-semibold transition" title="ปรับครุภัณฑ์ที่ไม่ใช่การแพทย์ให้เป็น 'เครื่องมือสนับสนุน' ทั้งหมด">
+                🛠️ <span>ปรับเป็นเครื่องมือสนับสนุน</span>
+            </button>
+            <button id="cleanAsteriskBtn"
+                class="bg-purple-50 border border-purple-300 text-purple-800 px-3 py-2 rounded-xl shadow-sm text-xs sm:text-sm hover:bg-purple-100 flex items-center justify-center gap-1 font-semibold transition" title="เปลี่ยนเครื่องหมาย * ในชื่อครุภัณฑ์เป็น x ทั้งหมดเพื่อป้องกันระบบ RMC+ ปฏิเสธ">
+                ✏️ <span>เปลี่ยน * เป็น x ในชื่อ</span>
+            </button>
+            <button id="cleanDatesBtn"
+                class="bg-cyan-50 border border-cyan-300 text-cyan-800 px-3 py-2 rounded-xl shadow-sm text-xs sm:text-sm hover:bg-cyan-100 flex items-center justify-center gap-1 font-semibold transition" title="ปรับรูปแบบวันที่ในระบบให้เป็น วว/ดด/ปปปป (พ.ศ.) มาตรฐาน">
+                📅 <span>ปรับวันที่มาตรฐาน</span>
+            </button>
             <button id="syncCloudBtn"
                 class="bg-teal-600 text-white px-3 sm:px-3.5 py-2 rounded-xl shadow text-xs sm:text-sm hover:bg-teal-700 flex items-center justify-center gap-1 font-semibold transition-all" title="ส่งข้อมูลที่แก้ไขในเครื่องขึ้น Cloud">
                 ☁️ <span>ส่งขึ้น Cloud</span> <span id="pendingSyncBadge" class="hidden bg-white text-emerald-800 text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ml-0.5">0</span>
@@ -1242,11 +1258,15 @@
                     </label>
                     <input type="file" id="importExcelFile" accept=".xlsx,.xls,.csv" class="hidden">
                     <button id="exportExcelBtn"
-                        class="btn-import-export bg-emerald-600 text-white px-3 py-2 rounded-lg shadow text-xs sm:text-sm hover:bg-emerald-700 flex items-center justify-center gap-1 font-medium">
+                        class="btn-import-export bg-emerald-600 text-white px-3 py-2 rounded-lg shadow text-xs sm:text-sm hover:bg-emerald-700 flex items-center justify-center gap-1 font-medium" title="ส่งออกข้อมูลครุภัณฑ์เป็นไฟล์ Excel">
                         📊 Excel
                     </button>
+                    <button id="exportRmcBtn"
+                        class="btn-import-export bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-lg shadow text-xs sm:text-sm flex items-center justify-center gap-1 font-bold transition transform hover:-translate-y-0.5" title="ส่งออกไฟล์ Excel/CSV รูปแบบตาราง Pasadu สำหรับนำเข้าเว็บ RMC+ (rmcplus.com) โดยเฉพาะ">
+                        🚀 <span>ส่งออก RMC+</span>
+                    </button>
                     <button id="exportCsvBtn"
-                        class="btn-import-export bg-blue-600 text-white px-3 py-2 rounded-lg shadow text-xs sm:text-sm hover:bg-blue-700 flex items-center justify-center gap-1 font-medium">
+                        class="btn-import-export bg-blue-600 text-white px-3 py-2 rounded-lg shadow text-xs sm:text-sm hover:bg-blue-700 flex items-center justify-center gap-1 font-medium" title="ส่งออกข้อมูลแบบ CSV ทั่วไป">
                         📑 CSV
                     </button>
                     <button id="deleteAllBtn"

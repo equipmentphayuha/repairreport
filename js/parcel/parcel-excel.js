@@ -271,6 +271,136 @@ export function initImportExport({ getActiveFields, getCurrentData, getFilteredD
         }
     });
 
+    // ===== EXPORT FOR RMC+ (EXACT FORMAT MATCHING EXR11_V2.MDB / RMCPLUS.COM) =====
+    function exportToRmcPlusFormat(items) {
+        return items.map((item, idx) => {
+            const riskVal = item.risk ? (String(item.risk).match(/^[1-3]/) ? Number(String(item.risk).match(/^[1-3]/)[0]) : item.risk) : 3;
+            const perUnitVal = item.perUnit !== undefined && item.perUnit !== '' ? Number(String(item.perUnit).replace(/,/g, '')) || 0 : 0;
+            
+            // แปลงวันที่ RECEIVE: ต้องเป็น DD/MM/YYYY โดย YYYY เป็นปี ค.ศ. ตามข้อกำหนดเป๊ะๆ
+            // หากไม่มีวันที่ หรือเป็นข้อความที่ไม่ใช่วันที่ (เช่น "ปี 39", "ธค 41") ให้ปล่อยเป็นค่าว่าง เพื่อไม่ให้ API พัง
+            let receiveVal = '';
+            const rawDate = String(item.receiveTm || '').trim();
+            if (rawDate) {
+                const dateMatch = rawDate.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+                if (dateMatch) {
+                    let d = parseInt(dateMatch[1], 10);
+                    let m = parseInt(dateMatch[2], 10);
+                    let y = parseInt(dateMatch[3], 10);
+                    if (y > 2400) y -= 543; // แปลง พ.ศ. เป็น ค.ศ.
+                    const dd = String(d).padStart(2, '0');
+                    const mm = String(m).padStart(2, '0');
+                    receiveVal = `${dd}/${mm}/${y}`;
+                } else if (/^\d{4}-\d{2}-\d{2}/.test(rawDate)) {
+                    let y = parseInt(rawDate.slice(0, 4), 10);
+                    if (y > 2400) y -= 543;
+                    const mm = rawDate.slice(5, 7);
+                    const dd = rawDate.slice(8, 10);
+                    receiveVal = `${dd}/${mm}/${y}`;
+                } else {
+                    // หากมีแต่ปีตัวเลข 4 หลัก เช่น 2562 หรือ 2019
+                    const yearOnly = rawDate.match(/(\d{4})/);
+                    if (yearOnly) {
+                        let y = parseInt(yearOnly[1], 10);
+                        if (y > 2400) y -= 543;
+                        receiveVal = `01/01/${y}`;
+                    } else {
+                        receiveVal = ''; // ปล่อยว่างถ้าไม่สามารถแปลงเป็นวันที่ที่ถูกต้องได้
+                    }
+                }
+            }
+
+            // แมปสถานะ New Date ให้ตรงตาม Scope RMC+: "ไม่พร้อมใช้", "Recall", "พร้อมใช้", "รอจำหน่าย", "จำหน่าย"
+            let newDateStatus = 'พร้อมใช้';
+            const rawStatus = String(item.remark || '').trim();
+            if (rawStatus.includes('ไม่พร้อม')) newDateStatus = 'ไม่พร้อมใช้';
+            else if (rawStatus.includes('รอจำหน่าย')) newDateStatus = 'รอจำหน่าย';
+            else if (rawStatus.includes('จำหน่าย')) newDateStatus = 'จำหน่าย';
+            else if (rawStatus.toLowerCase().includes('recall')) newDateStatus = 'Recall';
+            else newDateStatus = 'พร้อมใช้';
+
+            // ตรวจสอบและแมปประเภทเครื่องมือ (KIND) ตาม Scope: "เครื่องมือช่วยชีวิต", "เครื่องมือช่วยวินิจฉัย", "เครื่องมือเพื่อการรักษา", "เครื่องมือสนับสนุน"
+            const typeStr = String(item.type || '').trim();
+            const isMedical = typeStr.includes('การแพทย์') || typeStr.includes('แพทย์');
+            let kindVal = 'เครื่องมือสนับสนุน';
+            if (isMedical) {
+                const rawKind = String(item.kind || '').trim();
+                if (rawKind.includes('ชีวิต')) kindVal = 'เครื่องมือช่วยชีวิต';
+                else if (rawKind.includes('รักษา')) kindVal = 'เครื่องมือเพื่อการรักษา';
+                else if (rawKind.includes('วินิจฉัย')) kindVal = 'เครื่องมือช่วยวินิจฉัย';
+                else kindVal = 'เครื่องมือช่วยวินิจฉัย';
+            } else {
+                kindVal = 'เครื่องมือสนับสนุน';
+            }
+
+            // ตรวจสอบวิธีการได้มา (TMONEY)
+            let tmoneyVal = String(item.tmoney || item.money || 'ประกวดราคา').trim();
+            if (!tmoneyVal) tmoneyVal = 'ประกวดราคา';
+
+            // ตรวจสอบประเภทเงิน (KMONEY)
+            let kmoneyVal = String(item.kmoney || 'งบประมาณ').trim();
+            if (!kmoneyVal) kmoneyVal = 'งบประมาณ';
+            
+            // ตรวจสอบชื่อ (NAME*) - ต้องมีค่าเสมอตามเงื่อนไข * และแปลงเครื่องหมายดอกจัน (*) เป็น x ทั้งหมด
+            let nameVal = String(item.name || '').trim() || String(item.noid || 'ครุภัณฑ์ไม่ระบุชื่อ');
+            nameVal = nameVal.replace(/\*/g, 'x');
+
+            // ตรวจสอบแผนก (Div*) - ต้องมีค่าเสมอตามเงื่อนไข *
+            const divVal = String(item.div || '').trim() || 'ไม่ระบุแผนก';
+
+            // ตรวจสอบประเภท (TYPE*) - ต้องมีค่าเสมอตามเงื่อนไข *
+            const typeVal = String(item.type || '').trim() || 'ครุภัณฑ์อื่นๆ';
+            
+            // ลำดับคอลัมน์เป๊ะ 16 คอลัมน์ตามไฟล์ตัวอย่าง (ไม่มีคอลัมน์ ID ส่วนเกิน)
+            return {
+                'Pasadu ID': item.pasaduId || item.code || '',
+                'Noid': item.noid || '',
+                'NAME': nameVal,
+                'Model': item.model || '',
+                'SERIAL_NO': item.serialNo || '',
+                'COMPANY': item.vendor || item.company || '',
+                'TYPE': typeVal,
+                'Div': divVal,
+                'RECEIVE': receiveVal,
+                'TMONEY': tmoneyVal,
+                'KMONEY': kmoneyVal,
+                'KIND': kindVal,
+                'Risk': riskVal,
+                'หมายเหตุ': '',
+                'New Date': newDateStatus,
+                'PERUNIT': perUnitVal
+            };
+        });
+    }
+
+    const exportRmcBtn = document.getElementById('exportRmcBtn');
+    if (exportRmcBtn) {
+        exportRmcBtn.addEventListener('click', async () => {
+            const currentData = getCurrentData();
+            if (!currentData || currentData.length === 0) {
+                return alert('ไม่มีข้อมูลในการส่งออก');
+            }
+
+            if (typeof window.ensureExportLibraries === 'function') {
+                await window.ensureExportLibraries(['xlsx']);
+            }
+
+            const rmcRows = exportToRmcPlusFormat(currentData);
+            const dateStr = new Date().toISOString().slice(0, 10);
+
+            // สร้าง Workbook โดยตั้งชื่อ Sheet เป็น 'Pasadu' ให้ตรงกับ Master Table ของ RMC 100%
+            const ws = XLSX.utils.json_to_sheet(rmcRows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Pasadu");
+
+            // บันทึกเป็นไฟล์ .xlsx ที่ตั้งชื่อตรงตามมาตรฐาน RMC+
+            const fileName = `rmc_import_equipments_${dateStr}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+
+            alert(`✅ ส่งออกไฟล์สำหรับ RMC+ สำเร็จ!\n\n📁 ชื่อไฟล์: ${fileName}\n📋 จำนวน: ${rmcRows.length} รายการ\n📌 ชื่อตาราง (Sheet): Pasadu\n\nสามารถนำไฟล์นี้ไปนำเข้าในเว็บ https://rmcplus.com/ ได้ทันทีครับ`);
+        });
+    }
+
     // ===== CSV EXPORT (FOR ACCESS) =====
     document.getElementById('exportCsvBtn').addEventListener('click', () => {
         const currentData = getCurrentData();

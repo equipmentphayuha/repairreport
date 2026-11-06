@@ -1,7 +1,7 @@
 // Main Application Logic for Hospital Equipment Management
 import { db, collection, addDoc, getDocs, getDoc, onSnapshot, doc, setDoc, deleteDoc, writeBatch } from '../common/firebase.js';
 import { defaultParcelFields as defaultFields, isFirebaseConfigured } from '../common/config.js';
-import { parseQuickDate, parseNoidRange, calculateDepreciation } from '../common/utils.js';
+import { parseQuickDate, parseNoidRange, calculateDepreciation, cleanThaiReceiveDate } from '../common/utils.js';
 import { initImportExport } from './parcel-excel.js';
 
 const equipCollection = collection(db, "hospital_equipments");
@@ -1075,6 +1075,8 @@ function closeParcelFormModal() {
 window.openParcelFormModal = (isEdit = false) => {
     if (!isEdit) {
         setEditMode(false);
+        const remarkInput = document.getElementById('remark');
+        if (remarkInput) remarkInput.value = 'พร้อมใช้งาน';
     }
     openParcelFormModal(isEdit);
 };
@@ -1138,7 +1140,11 @@ function setEditMode(on, item = null) {
             deleteBtn.classList.remove('flex');
         }
         const formEl = document.getElementById('equipmentForm');
-        if (formEl) formEl.reset();
+        if (formEl) {
+            formEl.reset();
+            const remarkInput = document.getElementById('remark');
+            if (remarkInput) remarkInput.value = 'พร้อมใช้งาน';
+        }
         renderDataViews();
     }
 }
@@ -1342,6 +1348,9 @@ document.getElementById('equipmentForm').addEventListener('submit', (e) => {
     } else {
         data.createdAt = new Date().toISOString();
         data.id = 'local_' + Date.now();
+        if (!data.remark || data.remark.trim() === '') {
+            data.remark = 'พร้อมใช้งาน';
+        }
         currentData.unshift(data);
         markItemPending(data.id);
         localStorage.setItem('hospital_equipments', JSON.stringify(currentData));
@@ -1349,6 +1358,8 @@ document.getElementById('equipmentForm').addEventListener('submit', (e) => {
         renderDataViews();
         alert('✅ บันทึกรายการใหม่ลงในเครื่องเรียบร้อยแล้ว!\n(สามารถกดปุ่ม "☁️ ส่งขึ้น Cloud" เมื่อต้องการอัปเดต)');
         document.getElementById('equipmentForm').reset();
+        const remarkInput = document.getElementById('remark');
+        if (remarkInput) remarkInput.value = 'พร้อมใช้งาน';
         closeParcelFormModal();
     }
 });
@@ -1857,8 +1868,182 @@ document.getElementById('selectAllSyncBtn')?.addEventListener('change', (e) => {
 document.getElementById('closeSyncModalBtn')?.addEventListener('click', () => document.getElementById('syncModal').classList.add('hidden'));
 document.getElementById('closeSyncModalBtn2')?.addEventListener('click', () => document.getElementById('syncModal').classList.add('hidden'));
 document.getElementById('confirmSyncBtn')?.addEventListener('click', confirmPushToCloud);
+// ฟังก์ชันปรับแก้วันที่ได้รับ (RECEIVE) ให้เป็นรูปแบบ วว/ดด/ปปปป (พ.ศ.) มาตรฐาน
+async function cleanAllReceiveDates() {
+    if (!currentData || currentData.length === 0) {
+        return alert('ไม่มีรายการครุภัณฑ์ในระบบ');
+    }
+
+    let targetCount = 0;
+    currentData.forEach(item => {
+        const raw = String(item.receiveTm || '').trim();
+        if (raw) {
+            const cleaned = cleanThaiReceiveDate(raw);
+            if (cleaned && cleaned !== raw) {
+                targetCount++;
+            }
+        }
+    });
+
+    if (targetCount === 0) {
+        alert('วันที่ได้รับของครุภัณฑ์ทั้งหมดอยู่ในรูปแบบมาตรฐาน วว/ดด/ปปปป เรียบร้อยแล้ว');
+        return;
+    }
+
+    if (!confirm(`พบรายการที่วันที่ยังไม่ใช่รูปแบบมาตรฐาน วว/ดด/ปปปป จำนวน ${targetCount} รายการ\n(เช่น 'มีค 51' -> '01/03/2551', 'พ.ศ. 2554' -> '01/01/2554', 'ปี 64' -> '01/01/2564', '2558' -> '01/01/2558')\n\nต้องการปรับปรุงวันที่ในฐานข้อมูลทั้งหมดใช่หรือไม่?`)) {
+        return;
+    }
+
+    let modifiedCount = 0;
+    currentData.forEach(item => {
+        const raw = String(item.receiveTm || '').trim();
+        if (raw) {
+            const cleaned = cleanThaiReceiveDate(raw);
+            if (cleaned && cleaned !== raw) {
+                item.receiveTm = cleaned;
+                markItemPending(item.id);
+                modifiedCount++;
+            }
+        }
+    });
+
+    localStorage.setItem('hospital_equipments', JSON.stringify(currentData));
+    renderDataViews();
+
+    alert(`✅ ปรับปรุงวันที่ได้รับเป็น วว/ดด/ปปปป ในฐานข้อมูลเรียบร้อยแล้ว (${modifiedCount} รายการ)`);
+    if (isFirebaseConfigured && navigator.onLine) {
+        triggerBackgroundAutoSync();
+    }
+}
+window.cleanAllReceiveDates = cleanAllReceiveDates;
+
+// ฟังก์ชันแปลงเครื่องหมาย * ในชื่อครุภัณฑ์ทั้งหมดให้เป็น x
+async function replaceAsteriskInNames() {
+    if (!currentData || currentData.length === 0) {
+        return alert('ไม่มีรายการครุภัณฑ์ในระบบ');
+    }
+
+    let targetCount = 0;
+    currentData.forEach(item => {
+        if (item.name && item.name.includes('*')) {
+            targetCount++;
+        }
+    });
+
+    if (targetCount === 0) {
+        alert('ไม่พบชื่อครุภัณฑ์ที่มีเครื่องหมาย * ในระบบ');
+        return;
+    }
+
+    if (!confirm(`พบรายการที่มีเครื่องหมาย * ในชื่อจำนวน ${targetCount} รายการ\n\nต้องการเปลี่ยนเครื่องหมาย * เป็น "x" ทั้งหมดใช่หรือไม่?`)) {
+        return;
+    }
+
+    let modifiedCount = 0;
+    currentData.forEach(item => {
+        if (item.name && item.name.includes('*')) {
+            item.name = item.name.replace(/\*/g, 'x');
+            markItemPending(item.id);
+            modifiedCount++;
+        }
+    });
+
+    localStorage.setItem('hospital_equipments', JSON.stringify(currentData));
+    renderDataViews();
+
+    alert(`✅ เปลี่ยนเครื่องหมาย * เป็น "x" ในชื่อครุภัณฑ์เรียบร้อยแล้ว (${modifiedCount} รายการ)`);
+    if (isFirebaseConfigured && navigator.onLine) {
+        triggerBackgroundAutoSync();
+    }
+}
+window.replaceAsteriskInNames = replaceAsteriskInNames;
+
+// ปรับข้อมูล: รายการที่ไม่ใช่ครุภัณฑ์การแพทย์ ให้ตั้งค่า KIND เป็น 'เครื่องมือสนับสนุน'
+async function setNonMedicalEquipmentsToSupport() {
+    if (!currentData || currentData.length === 0) {
+        return alert('ไม่มีรายการครุภัณฑ์ในระบบ');
+    }
+
+    let targetCount = 0;
+    currentData.forEach(item => {
+        const type = String(item.type || '').trim();
+        const isNotMedical = !type.includes('การแพทย์') && !type.includes('แพทย์');
+        if (isNotMedical && item.kind !== 'เครื่องมือสนับสนุน') {
+            targetCount++;
+        }
+    });
+
+    if (targetCount === 0) {
+        alert('ครุภัณฑ์ที่ไม่ใช่การแพทย์ทั้งหมด ถูกกำหนดเป็น "เครื่องมือสนับสนุน" เรียบร้อยแล้ว');
+        return;
+    }
+
+    if (!confirm(`พบครุภัณฑ์ที่ไม่ใช่การแพทย์ ${targetCount} รายการ\n\nต้องการปรับประเภทเครื่องมือ (KIND) ให้เป็น "เครื่องมือสนับสนุน" ทั้งหมดใช่หรือไม่?`)) {
+        return;
+    }
+
+    let modifiedCount = 0;
+    currentData.forEach(item => {
+        const type = String(item.type || '').trim();
+        const isNotMedical = !type.includes('การแพทย์') && !type.includes('แพทย์');
+        if (isNotMedical && item.kind !== 'เครื่องมือสนับสนุน') {
+            item.kind = 'เครื่องมือสนับสนุน';
+            markItemPending(item.id);
+            modifiedCount++;
+        }
+    });
+
+    localStorage.setItem('hospital_equipments', JSON.stringify(currentData));
+    renderDataViews();
+
+    alert(`✅ ปรับเปลี่ยนประเภทเครื่องมือเป็น "เครื่องมือสนับสนุน" เรียบร้อยแล้ว (${modifiedCount} รายการ)`);
+    if (isFirebaseConfigured && navigator.onLine) {
+        triggerBackgroundAutoSync();
+    }
+}
+window.setNonMedicalEquipmentsToSupport = setNonMedicalEquipmentsToSupport;
+
+// ปรับสถานะครุภัณฑ์ทั้งหมดเป็น 'พร้อมใช้งาน'
+async function setAllEquipmentsToReady() {
+    if (!currentData || currentData.length === 0) {
+        return alert('ไม่มีรายการครุภัณฑ์ในระบบ');
+    }
+
+    const count = currentData.length;
+    if (!confirm(`คุณต้องการปรับสถานะครุภัณฑ์ทั้งหมด (${count} รายการ) ให้เป็น "พร้อมใช้งาน" ใช่หรือไม่?`)) {
+        return;
+    }
+
+    let modifiedCount = 0;
+    currentData.forEach(item => {
+        if (item.remark !== 'พร้อมใช้งาน') {
+            item.remark = 'พร้อมใช้งาน';
+            markItemPending(item.id);
+            modifiedCount++;
+        }
+    });
+
+    localStorage.setItem('hospital_equipments', JSON.stringify(currentData));
+    renderDataViews();
+
+    if (modifiedCount === 0) {
+        alert('ครุภัณฑ์ทั้งหมดมีสถานะเป็น "พร้อมใช้งาน" อยู่แล้ว');
+        return;
+    }
+
+    alert(`✅ ปรับสถานะครุภัณฑ์เป็น "พร้อมใช้งาน" เรียบร้อยแล้ว (${modifiedCount} รายการ)\n\nระบบจะบันทึกในเครื่องและ Sync ขึ้น Cloud ให้โดยอัตโนมัติ`);
+    if (isFirebaseConfigured && navigator.onLine) {
+        triggerBackgroundAutoSync();
+    }
+}
+window.setAllEquipmentsToReady = setAllEquipmentsToReady;
+
 // Bind Sync Buttons
 document.getElementById('pullCloudBtn')?.addEventListener('click', () => pullFromCloud(true));
+document.getElementById('setAllReadyBtn')?.addEventListener('click', setAllEquipmentsToReady);
+document.getElementById('setAllSupportBtn')?.addEventListener('click', setNonMedicalEquipmentsToSupport);
+document.getElementById('cleanAsteriskBtn')?.addEventListener('click', replaceAsteriskInNames);
+document.getElementById('cleanDatesBtn')?.addEventListener('click', cleanAllReceiveDates);
 document.getElementById('syncCloudBtn')?.addEventListener('click', openSyncModal);
 document.getElementById('cancelCloudSyncBtn')?.addEventListener('click', cancelPendingChanges);
 
