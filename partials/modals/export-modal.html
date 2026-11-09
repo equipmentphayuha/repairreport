@@ -1,0 +1,124 @@
+  <!-- Modal ตัวเลือกการส่งออกไฟล์ Excel/CSV ทะเบียนพัสดุ -->
+  <div id="exportModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50 hidden no-print">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full flex flex-col overflow-hidden animate-fade-in">
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-emerald-700 to-teal-800 text-white px-5 py-3.5 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2.5">
+          <span class="text-2xl">📊</span>
+          <div>
+            <h3 class="font-bold text-base sm:text-lg leading-tight">ตัวเลือกการส่งออกข้อมูล (Export)</h3>
+            <p class="text-xs text-emerald-100">ส่งออกข้อมูลทะเบียนพัสดุเป็น Excel หรือ CSV พร้อมตัวเลือกการแยกกลุ่ม</p>
+          </div>
+        </div>
+        <button type="button" id="closeExportModalBtn" class="text-white/80 hover:text-white p-1 rounded-lg text-xl leading-none transition">&times;</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+        <!-- 1. เลือกขอบเขตข้อมูล (Scope) -->
+        <div class="space-y-1.5">
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">1. ขอบเขตข้อมูลที่ต้องการส่งออก</label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <label class="flex items-center gap-2 p-2.5 rounded-lg border border-slate-200 hover:bg-emerald-50 cursor-pointer has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/60 transition">
+              <input type="radio" name="exportScope" value="all" checked class="text-emerald-600 focus:ring-emerald-500">
+              <div>
+                <span class="font-semibold text-slate-800 block">ข้อมูลทั้งหมดในระบบ</span>
+                <span class="text-slate-500 text-[11px]" id="exportTotalCountLabel">ทั้งหมด 0 รายการ</span>
+              </div>
+            </label>
+            <label class="flex items-center gap-2 p-2.5 rounded-lg border border-slate-200 hover:bg-emerald-50 cursor-pointer has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/60 transition">
+              <input type="radio" name="exportScope" value="filtered" class="text-emerald-600 focus:ring-emerald-500">
+              <div>
+                <span class="font-semibold text-slate-800 block">เฉพาะที่กรองบนหน้าเว็บ</span>
+                <span class="text-slate-500 text-[11px]" id="exportFilteredCountLabel">ตามตัวกรองปัจจุบัน</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- ตัวกรองเฉพาะเจาะจง (เลือกแผนก / ประเภท ที่ต้องการได้เลยใน modal) -->
+        <div id="exportCustomFilterBox" class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2.5">
+          <div class="text-xs font-semibold text-slate-700 flex items-center justify-between">
+            <span>🎯 หรือเลือกส่งออกเฉพาะกลุ่มที่ระบุ:</span>
+            <button type="button" id="exportResetFilterSelects" class="text-[11px] text-emerald-600 hover:underline">ล้างการเลือก</button>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <div>
+              <label for="exportDivSelect" class="block font-medium text-slate-600 mb-1">🏢 แผนก/กลุ่มงาน:</label>
+              <select id="exportDivSelect" class="w-full border border-slate-300 rounded-lg p-1.5 bg-white text-slate-700 focus:ring-2 focus:ring-emerald-500">
+                <option value="">-- ทุกแผนก --</option>
+              </select>
+            </div>
+            <div>
+              <label for="exportTypeSelect" class="block font-medium text-slate-600 mb-1">🏷️ ประเภทครุภัณฑ์:</label>
+              <select id="exportTypeSelect" class="w-full border border-slate-300 rounded-lg p-1.5 bg-white text-slate-700 focus:ring-2 focus:ring-emerald-500">
+                <option value="">-- ทุกประเภท --</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. เลือกการจัดกลุ่ม (Group By) -->
+        <div class="space-y-1.5">
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">2. การจัดกลุ่มข้อมูล</label>
+          <div class="grid grid-cols-3 gap-2 text-xs">
+            <label class="flex flex-col items-center p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer text-center has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/60 transition">
+              <input type="radio" name="exportGroupBy" value="none" checked class="text-emerald-600 focus:ring-emerald-500 mb-1">
+              <span class="font-semibold text-slate-800 text-xs">รวมทั้งหมด</span>
+              <span class="text-slate-400 text-[10px]">ไม่แยกกลุ่ม</span>
+            </label>
+            <label class="flex flex-col items-center p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer text-center has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/60 transition">
+              <input type="radio" name="exportGroupBy" value="div" class="text-emerald-600 focus:ring-emerald-500 mb-1">
+              <span class="font-semibold text-slate-800 text-xs">🏢 แยกตามแผนก</span>
+              <span class="text-slate-400 text-[10px]">กลุ่มงาน/หน่วยงาน</span>
+            </label>
+            <label class="flex flex-col items-center p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer text-center has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/60 transition">
+              <input type="radio" name="exportGroupBy" value="type" class="text-emerald-600 focus:ring-emerald-500 mb-1">
+              <span class="font-semibold text-slate-800 text-xs">🏷️ แยกตามประเภท</span>
+              <span class="text-slate-400 text-[10px]">หมวดหมู่พัสดุ</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 3. รูปแบบผลลัพธ์ (Output Format) เมื่อมีการแยกกลุ่ม -->
+        <div id="exportOutputFormatWrap" class="space-y-1.5">
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">3. รูปแบบไฟล์ผลลัพธ์</label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <label class="flex items-start gap-2.5 p-2.5 rounded-lg border border-slate-200 hover:bg-emerald-50 cursor-pointer has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/60 transition">
+              <input type="radio" name="exportOutputType" value="sheets" checked class="text-emerald-600 focus:ring-emerald-500 mt-0.5">
+              <div>
+                <span class="font-semibold text-slate-800 block">📑 ไฟล์เดียว แยกหลาย Sheet</span>
+                <span class="text-slate-500 text-[11px]">ไฟล์ .xlsx เดียว แต่ละแผนก/ประเภทเป็น 1 Sheet</span>
+              </div>
+            </label>
+            <label class="flex items-start gap-2.5 p-2.5 rounded-lg border border-slate-200 hover:bg-emerald-50 cursor-pointer has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/60 transition">
+              <input type="radio" name="exportOutputType" value="zip" class="text-emerald-600 focus:ring-emerald-500 mt-0.5">
+              <div>
+                <span class="font-semibold text-slate-800 block">📦 แยกเป็นหลายไฟล์ (.ZIP)</span>
+                <span class="text-slate-500 text-[11px]">แต่ละแผนก/ประเภทเป็น 1 ไฟล์ Excel มัดรวมเป็น Zip</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- สรุปผลที่จะส่งออก -->
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs flex items-center justify-between text-emerald-900">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">ℹ️</span>
+            <div>
+              <span class="font-semibold" id="exportSummaryText">จะส่งออก 0 รายการ</span>
+              <p class="text-[11px] text-emerald-700" id="exportGroupSummaryText">เป็นไฟล์เดียว (1 Sheet)</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex items-center justify-end gap-2.5 shrink-0">
+        <button type="button" id="closeExportModalBtn2" class="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs sm:text-sm font-semibold transition">ยกเลิก</button>
+        <button type="button" id="confirmExportBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold shadow flex items-center gap-1.5 transition">
+          <span>📥</span> ส่งออกข้อมูลทันที
+        </button>
+      </div>
+    </div>
+  </div>

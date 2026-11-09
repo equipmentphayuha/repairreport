@@ -1,0 +1,180 @@
+    <!-- ================= แท็บ 4: เจ้าหน้าที่ ================= -->
+    <section id="section-staff" class="space-y-6 hidden">
+
+      <!-- Header + Export -->
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-700">รายงานเจ้าหน้าที่ — ช่างซ่อม & ผู้ส่งซ่อม</h2>
+          <p class="text-xs text-slate-500">สรุปภาระงานช่างซ่อม และความถี่การส่งซ่อมของแต่ละบุคคล</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="openStaffModal()" class="bg-teal-600 hover:bg-teal-700 text-white px-3.5 py-1.5 rounded-lg text-sm font-medium shadow flex items-center gap-1.5 transition">
+            <span>+</span> เพิ่มเจ้าหน้าที่
+          </button>
+          <button onclick="exportStaffToPPT()" class="bg-orange-600 hover:bg-orange-700 text-white px-3.5 py-1.5 rounded-lg text-sm font-medium shadow flex items-center gap-1.5 transition">
+            <span>📽️</span> Export PPT เจ้าหน้าที่
+          </button>
+          <button onclick="exportStaffToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-lg text-sm font-medium shadow flex items-center gap-1.5 transition">
+            <span>📊</span> Export Excel เจ้าหน้าที่
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Cards สำหรับเจ้าหน้าที่ -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div class="relative overflow-hidden bg-gradient-to-br from-teal-500 to-teal-700 p-5 rounded-2xl shadow-lg text-white">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-sm text-teal-100 font-medium">ช่างซ่อมทั้งหมด</p>
+              <p id="kpi-staff-technicians" class="text-3xl font-bold mt-1">0 คน</p>
+            </div>
+            <div class="bg-white/20 p-2.5 rounded-xl"><span class="text-2xl">🔧</span></div>
+          </div>
+          <div class="mt-4 text-xs bg-white/10 inline-block px-2.5 py-1 rounded-lg" id="kpi-staff-tech-sub">ปฏิบัติงาน 0 ครั้ง</div>
+          <div class="absolute -bottom-4 -right-4 opacity-10 text-8xl">👷</div>
+        </div>
+        <div class="relative overflow-hidden bg-gradient-to-br from-indigo-500 to-indigo-700 p-5 rounded-2xl shadow-lg text-white">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-sm text-indigo-100 font-medium">ช่างที่ซ่อมมากที่สุด</p>
+              <p id="kpi-staff-top-tech" class="text-xl font-bold mt-1 truncate max-w-[140px]">-</p>
+            </div>
+            <div class="bg-white/20 p-2.5 rounded-xl"><span class="text-2xl">🏆</span></div>
+          </div>
+          <div class="mt-4 text-xs bg-white/10 inline-block px-2.5 py-1 rounded-lg" id="kpi-staff-top-tech-sub">0 งาน</div>
+          <div class="absolute -bottom-4 -right-4 opacity-10 text-8xl">⭐</div>
+        </div>
+        <div class="relative overflow-hidden bg-gradient-to-br from-purple-500 to-purple-700 p-5 rounded-2xl shadow-lg text-white">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-sm text-purple-100 font-medium">ผู้ส่งซ่อมทั้งหมด</p>
+              <p id="kpi-staff-requesters" class="text-3xl font-bold mt-1">0 คน</p>
+            </div>
+            <div class="bg-white/20 p-2.5 rounded-xl"><span class="text-2xl">📋</span></div>
+          </div>
+          <div class="mt-4 text-xs bg-white/10 inline-block px-2.5 py-1 rounded-lg" id="kpi-staff-req-sub">ส่งซ่อมรวม 0 ครั้ง</div>
+          <div class="absolute -bottom-4 -right-4 opacity-10 text-8xl">👤</div>
+        </div>
+        <div class="relative overflow-hidden bg-gradient-to-br from-rose-500 to-rose-700 p-5 rounded-2xl shadow-lg text-white">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-sm text-rose-100 font-medium">ผู้ส่งซ่อมบ่อยที่สุด</p>
+              <p id="kpi-staff-top-req" class="text-xl font-bold mt-1 truncate max-w-[140px]">-</p>
+            </div>
+            <div class="bg-white/20 p-2.5 rounded-xl"><span class="text-2xl">📌</span></div>
+          </div>
+          <div class="mt-4 text-xs bg-white/10 inline-block px-2.5 py-1 rounded-lg" id="kpi-staff-top-req-sub">0 ครั้ง</div>
+          <div class="absolute -bottom-4 -right-4 opacity-10 text-8xl">🔔</div>
+        </div>
+      </div>
+
+      <!-- กราฟช่าง + กราฟผู้ส่งซ่อม -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+          <h3 class="text-sm font-bold text-slate-700 mb-3">📊 ภาระงานช่างซ่อม (จำนวนงานและค่าใช้จ่าย)</h3>
+          <div class="relative h-72"><canvas id="techChart"></canvas></div>
+        </div>
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+          <h3 class="text-sm font-bold text-slate-700 mb-3">📊 ความถี่การส่งซ่อมแยกตามผู้แจ้ง (Top 10)</h3>
+          <div class="relative h-72"><canvas id="requesterChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- ตารางช่างซ่อม -->
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3 border-b pb-2">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5"><span>🔧</span> สรุปภาระงานช่างซ่อม</h3>
+            <p class="text-xs text-slate-500">เรียงตามจำนวนงานที่รับผิดชอบ</p>
+          </div>
+          <input type="text" id="techSearchInput" aria-label="ค้นชื่อช่างซ่อม" oninput="renderStaffTables()" placeholder="ค้นชื่อช่าง..." class="border border-slate-200 rounded px-2 py-1 text-xs w-36 focus:outline-teal-600">
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-teal-50 text-teal-800 uppercase sticky top-0">
+              <tr>
+                <th class="py-2.5 px-3">อันดับ</th>
+                <th class="py-2.5 px-3">ชื่อช่างซ่อม / ผู้ดำเนินการ</th>
+                <th class="py-2.5 px-3 text-center">จำนวนงาน</th>
+                <th class="py-2.5 px-3 text-center">เสร็จสิ้น</th>
+                <th class="py-2.5 px-3 text-center">กำลังดำเนินการ</th>
+                <th class="py-2.5 px-3 text-right">ค่าใช้จ่ายรวม</th>
+                <th class="py-2.5 px-3 text-right">เฉลี่ย/งาน</th>
+                <th class="py-2.5 px-3">ซ่อมอะไรบ้าง</th>
+              </tr>
+            </thead>
+            <tbody id="techTableBody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ตารางผู้ส่งซ่อม -->
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3 border-b pb-2">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5"><span>📋</span> สรุปการส่งซ่อมแยกตามผู้แจ้ง</h3>
+            <p class="text-xs text-slate-500">เรียงตามความถี่การส่งซ่อม</p>
+          </div>
+          <input type="text" id="requesterSearchInput" aria-label="ค้นชื่อผู้ส่งซ่อม" oninput="renderStaffTables()" placeholder="ค้นชื่อผู้ส่งซ่อม..." class="border border-slate-200 rounded px-2 py-1 text-xs w-40 focus:outline-purple-600">
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-purple-50 text-purple-800 uppercase sticky top-0">
+              <tr>
+                <th class="py-2.5 px-3">อันดับ</th>
+                <th class="py-2.5 px-3">ชื่อผู้ส่งซ่อม / แจ้งซ่อม</th>
+                <th class="py-2.5 px-3">แผนก</th>
+                <th class="py-2.5 px-3 text-center">ส่งซ่อมทั้งหมด</th>
+                <th class="py-2.5 px-3 text-right">ค่าใช้จ่ายรวม</th>
+                <th class="py-2.5 px-3">รายการที่ส่งซ่อม</th>
+              </tr>
+            </thead>
+            <tbody id="requesterTableBody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- รายงานงานแต่ละช่าง (คลิกขยาย) -->
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-1.5"><span>📁</span> รายละเอียดงานแต่ละช่างซ่อม</h3>
+        <div id="techDetailList" class="space-y-3"></div>
+      </div>
+
+      <!-- จัดการทำเนียบรายชื่อเจ้าหน้าที่ (ช่างซ่อม & ผู้ส่งซ่อม) -->
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4 border-b pb-3">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+              <span>👥</span> ทำเนียบรายชื่อเจ้าหน้าที่ในระบบ
+            </h3>
+            <p class="text-xs text-slate-500" id="staffManageSummary">ช่างซ่อม 0 คน | ผู้ส่งซ่อม 0 คน</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="staffFilterRole" aria-label="กรองบทบาทเจ้าหน้าที่" onchange="renderStaffManagementTable()" class="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs bg-slate-50 focus:outline-teal-600">
+              <option value="all">ทั้งหมด (ช่าง & ผู้ส่ง)</option>
+              <option value="technician">เฉพาะช่างซ่อม</option>
+              <option value="requester">เฉพาะผู้ส่งซ่อม</option>
+            </select>
+            <input type="text" id="staffSearchManage" aria-label="ค้นหาชื่อหรือแผนกเจ้าหน้าที่" oninput="renderStaffManagementTable()" placeholder="ค้นหาชื่อ หรือ แผนก..." class="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs w-44 focus:outline-teal-600">
+            <button type="button" onclick="openStaffModal()" class="bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium shadow flex items-center gap-1 transition">
+              <span>+</span> เพิ่มเจ้าหน้าที่
+            </button>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-100 text-slate-700 uppercase">
+              <tr>
+                <th class="py-2.5 px-4">ชื่อ - นามสกุล</th>
+                <th class="py-2.5 px-4">บทบาท / หน้าที่</th>
+                <th class="py-2.5 px-4">กลุ่มงาน / แผนก</th>
+                <th class="py-2.5 px-4 text-center">ประวัติงานในระบบ</th>
+                <th class="py-2.5 px-4 text-center">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="staffManagementBody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>

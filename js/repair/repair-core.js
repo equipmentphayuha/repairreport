@@ -972,8 +972,10 @@ async function manualSyncFromCloud() {
   alert("ดึงข้อมูลล่าสุดจากฐานข้อมูลสำเร็จ!");
 }
 
-// Updated window.onload to initialize Firebase and fetch data
-window.onload = function() {
+// Updated initRepairSystem to initialize data and render views
+window.initRepairSystem = function() {
+  if (window._isRepairSystemInitialized) return;
+  window._isRepairSystemInitialized = true;
   // ── ล้างข้อมูลตัวอย่างเก่าออกจาก localStorage ────────────────────────────────
   // (ทำครั้งเดียว: ถ้า Firebase sync มาแล้วก็จะ overwrite ให้เอง)
   const legacyKeys = ['phayuha_repairs', 'phayuha_equipments', 'phayuha_technicians'];
@@ -1004,6 +1006,7 @@ window.onload = function() {
   renderDashboard();
   renderTable();
 };
+window.onload = window.initRepairSystem;
 
 window.startFirebaseSync = async function() {
   // ตรวจสอบว่าล็อกอินผ่านแล้วหรือยัง ถ้ายังไม่ล็อกอินห้ามยิงเด็ดขาด
@@ -1377,7 +1380,7 @@ function renderInteractiveWorkOrderSlip(r, isNew = false) {
 
         <div style="text-align: center; margin-top: 6px; font-size: 12.5pt;">
           <div>ลงชื่อ............................................................</div>
-          <div style="font-weight: bold; margin-top: 1px;">(นางสาวศิริพรรณ ชมภูฟู)</div>
+          <div style="font-weight: bold; margin-top: 1px;">(นางสาวศิริพรรณ ชมภูพู่)</div>
           <div style="font-weight: bold;">ผู้อำนวยการโรงพยาบาลพยุหะคีรี</div>
         </div>
       </div>

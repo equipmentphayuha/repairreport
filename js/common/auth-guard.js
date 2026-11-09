@@ -6,9 +6,13 @@
 window.currentUserProfile = null;
 
 // ซ่อน UI ระบบตั้งแต่เริ่มต้นจนกว่าจะผ่านการยืนยันตัวตน
-document.addEventListener("DOMContentLoaded", () => {
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => {
+    setupAuthUI();
+  });
+} else {
   setupAuthUI();
-});
+}
 
 function setupAuthUI() {
   const loginModal = document.getElementById("authGatekeeperModal");

@@ -1,0 +1,28 @@
+  <!-- ================= Modal: แสดงตัวอย่างและพิมพ์รายงานผู้บริหาร (Executive PDF Report) ================= -->
+  <div id="printExecutiveReportModal" class="fixed inset-0 bg-slate-900 bg-opacity-70 hidden z-50 flex items-center justify-center p-1 sm:p-4 no-print overflow-hidden">
+    <div class="bg-white rounded-xl sm:rounded-2xl max-w-5xl w-full shadow-2xl flex flex-col h-[98vh] max-h-[98vh] sm:max-h-[96vh] modal-enter overflow-hidden">
+      <div class="bg-slate-900 px-4 sm:px-6 py-2.5 sm:py-3.5 text-white flex justify-between items-center border-b border-slate-700 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">📑</span>
+          <div>
+            <h3 class="font-bold text-sm sm:text-base leading-tight">ตัวอย่างรายงานสรุปสำหรับผู้บริหาร (Executive Report Preview)</h3>
+            <p class="text-[11px] text-slate-300">จัดรูปแบบพิเศษสำหรับส่งออกเป็น PDF และพิมพ์เอกสาร A4 สวยงามเป็นทางการ</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="executePrintExecutiveReport()" class="bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white font-bold px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs shadow-md flex items-center gap-1.5 transition">
+            <span>🖨️</span> พิมพ์ / บันทึก PDF
+          </button>
+          <button type="button" onclick="closeExecutiveReportModal()" class="text-slate-400 hover:text-white text-2xl font-bold leading-none ml-2">&times;</button>
+        </div>
+      </div>
+      <div class="p-2 sm:p-6 overflow-y-auto overflow-x-auto bg-slate-200 flex-1 flex justify-center items-start min-h-0 w-full" style="-webkit-overflow-scrolling: touch;">
+        <div id="printExecutiveReportContent" class="bg-white p-4 sm:p-8 rounded-xl shadow-md border border-slate-300 w-full max-w-[210mm] text-slate-800 font-sans my-auto sm:my-0">
+          <!-- เนื้อหารายงานจะถูกสร้างด้วย JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- โซนที่จะถูกพิมพ์เมื่อสั่ง Print หน้าเอกสารรายงานสรุปผู้บริหาร -->
+  <div id="printExecutiveReportZone" class="hidden"></div>

@@ -1,0 +1,32 @@
+      <!-- ================= Modal: แสดงตัวอย่างและพิมพ์ใบส่งซ่อม (Work Order Slip) ================= -->
+    <div id="printWorkOrderModal" class="fixed inset-0 bg-slate-900 bg-opacity-60 hidden z-50 flex items-center justify-center p-1 sm:p-4 no-print overflow-hidden">
+      <div class="bg-white rounded-xl sm:rounded-2xl max-w-4xl w-full shadow-2xl flex flex-col h-[98vh] max-h-[98vh] sm:max-h-[96vh] modal-enter overflow-hidden">
+        <div class="bg-teal-800 px-3.5 sm:px-6 py-2.5 sm:py-3 text-white flex flex-wrap justify-between items-center gap-2 shrink-0">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">🖨️</span>
+            <div>
+              <h3 class="font-bold text-sm sm:text-base leading-tight">แบบฟอร์มใบส่งซ่อม/ขออนุมัติซ่อม (พิมพ์หรือแก้ไขก่อนพิมพ์)</h3>
+              <p class="text-[11px] text-teal-200">แก้ไขข้อความในหน้านี้ได้โดยตรง หรือกดบันทึกกลับลงระบบ</p>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" id="btnSaveSlipToSystem" onclick="saveSlipBackToSystem()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow flex items-center gap-1.5 transition" title="บันทึกข้อมูลที่แก้ไขบนเอกสารนี้กลับเข้าสู่ระบบซ่อม">
+              <span>💾</span> บันทึกเข้าระบบ
+            </button>
+            <button type="button" onclick="executePrintWorkOrder()" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold px-3.5 py-1.5 rounded-lg text-xs shadow flex items-center gap-1.5 transition">
+              <span>🖨️</span> สั่งพิมพ์เอกสาร
+            </button>
+            <button type="button" onclick="closePrintWorkOrderModal()" class="text-teal-200 hover:text-white text-2xl font-bold leading-none ml-1">&times;</button>
+          </div>
+        </div>
+        <div class="p-2 sm:p-5 overflow-y-auto overflow-x-auto bg-slate-100 flex-1 flex justify-center items-start min-h-0 w-full" style="-webkit-overflow-scrolling: touch;">
+          <div id="printWorkOrderContent" class="bg-white p-3 sm:p-6 rounded-lg shadow-sm border border-slate-300 w-full max-w-[210mm] text-slate-800 font-sans my-auto sm:my-0">
+            <!-- เนื้อหาใบส่งซ่อมจะถูกสร้างด้วย JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- โซนที่จะถูกพิมพ์เมื่อสั่ง Print หน้าเอกสารเดี่ยว -->
+  <div id="printWorkOrderOnlyZone" class="hidden"></div>

@@ -1,0 +1,163 @@
+  <!-- ================= Modal: แบบฟอร์มเพิ่ม/แก้ไขใบส่งซ่อม ================= -->
+  <div id="repairModal" class="fixed inset-0 bg-slate-900 bg-opacity-50 hidden z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[92vh] modal-enter">
+      <div class="bg-teal-700 px-6 py-4 text-white flex justify-between items-center shrink-0">
+        <h3 id="modalTitle" class="font-bold text-base">บันทึกข้อมูลใบส่งซ่อม</h3>
+        <button onclick="closeModal()" class="text-teal-200 hover:text-white text-xl font-bold">&times;</button>
+      </div>
+      <form id="repairForm" onsubmit="saveRepair(event)" class="p-6 space-y-4 overflow-y-auto">
+        <input type="hidden" id="editIndex">
+
+        <!-- เลขที่ใบซ่อม (รูปแบบ ลำดับ/ปีงบประมาณ เช่น 1/2570) -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label for="formRepairNo" class="block text-xs font-semibold text-slate-600">เลขที่ใบส่งซ่อม *</label>
+              <span class="text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.2 rounded font-medium">ลำดับ/ปีงบ</span>
+            </div>
+            <input type="text" id="formRepairNo" required placeholder="เช่น 1/2570" class="w-full border rounded-lg p-2 text-sm bg-slate-50 font-bold text-teal-800 text-base focus:outline-teal-600">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">วันที่แจ้ง *</label>
+            <input type="hidden" id="formDate" required>
+            <div class="flex gap-1">
+              <select id="formDate_d" aria-label="วันที่แจ้ง (วัน)" class="border rounded-lg p-2 text-sm focus:outline-teal-600 w-14" title="วัน"><option value="">วัน</option></select>
+              <select id="formDate_m" aria-label="วันที่แจ้ง (เดือน)" class="border rounded-lg p-2 text-sm focus:outline-teal-600 flex-1" title="เดือน"><option value="">เดือน</option></select>
+              <select id="formDate_y" aria-label="วันที่แจ้ง (ปี พ.ศ.)" class="border rounded-lg p-2 text-sm focus:outline-teal-600 w-24" title="ปี พ.ศ."><option value="">ปี พ.ศ.</option></select>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="formDept" class="block text-xs font-semibold text-slate-600 mb-1">แผนก / กลุ่มงาน *</label>
+            <input type="text" id="formDept" list="divDatalist" required placeholder="เช่น ER, OPD, ตึกผู้ป่วยใน" class="w-full border rounded-lg p-2 text-sm focus:outline-teal-600">
+          </div>
+          <div>
+            <label for="formRequester" class="block text-xs font-semibold text-slate-600 mb-1">ผู้ส่งซ่อม / แจ้งซ่อม *</label>
+            <input type="text" id="formRequester" list="requesterDatalist" required placeholder="ชื่อ-นามสกุล ผู้แจ้งซ่อม" class="w-full border rounded-lg p-2 text-sm focus:outline-teal-600">
+          </div>
+        </div>
+
+        <div>
+          <label for="formCategory" class="block text-xs font-semibold text-slate-600 mb-1">ประเภทครุภัณฑ์ *</label>
+          <select id="formCategory" class="w-full border rounded-lg p-2 text-sm focus:outline-teal-600">
+            <option value="เครื่องมือแพทย์">เครื่องมือแพทย์</option>
+            <option value="ระบบคอมพิวเตอร์/เครือข่าย">ระบบคอมพิวเตอร์/เครือข่าย</option>
+            <option value="ระบบสาธารณูปโภค">ระบบสาธารณูปโภค</option>
+            <option value="ครุภัณฑ์สำนักงานทั่วไป">ครุภัณฑ์สำนักงานทั่วไป</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label for="formEquipName" class="block text-xs font-semibold text-slate-600">ชื่อเครื่องมือ/รายการที่ซ่อม *</label>
+              <button type="button" onclick="setFacilityRepairMode()" class="text-[11px] text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded font-medium transition flex items-center gap-1" title="สำหรับงานซ่อมอาคารสถานที่ ไฟฟ้า ประปา ประตู หน้าต่าง ที่ไม่มีเลขครุภัณฑ์">
+                <span>🏢</span> งานอาคาร/ระบบ
+              </button>
+            </div>
+            <input type="text" id="formEquipName" list="equipmentsDatalist" oninput="onEquipNameChange(event)" required placeholder="พิมพ์ค้นหาหรือระบุชื่อสิ่งที่ต้องการซ่อม..." class="w-full border rounded-lg p-2 text-sm focus:outline-teal-600">
+          </div>
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label for="formEquipCode" class="block text-xs font-semibold text-slate-600">รหัส/หมายเลขครุภัณฑ์</label>
+              <div class="flex items-center gap-1">
+                <button type="button" onclick="openQrScannerModal('repair_form')" class="text-[11px] text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-2 py-0.5 rounded font-medium transition flex items-center gap-1">
+                  <span>📷</span> สแกน QR
+                </button>
+                <button type="button" onclick="onGenerateEquipCodeClick()" class="text-[11px] text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2 py-0.5 rounded font-medium transition flex items-center gap-1">
+                  <span>⚡</span> สร้างรหัส
+                </button>
+              </div>
+            </div>
+            <input type="text" id="formEquipCode" placeholder="เช่น 6510-001-0005 หรือเว้นว่างหากเป็นงานอาคาร" class="w-full border rounded-lg p-2 text-sm font-mono focus:outline-teal-600">
+          </div>
+        </div>
+
+        <div>
+          <label for="formSymptom" class="block text-xs font-semibold text-slate-600 mb-1">อาการชำรุด / ปัญหาที่พบ *</label>
+          <textarea id="formSymptom" rows="2" required placeholder="ระบุอาการชำรุดโดยละเอียด" class="w-full border rounded-lg p-2 text-sm focus:outline-teal-600"></textarea>
+        </div>
+
+        <!-- ผู้ดำเนินการซ่อม พร้อมปุ่มเพิ่มช่าง และปุ่มคลิกเลือกชื่อช่างทันที -->
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+          <div class="flex items-center justify-between">
+            <label for="formAssignee" class="block text-xs font-semibold text-slate-700">ผู้ได้รับมอบหมายดำเนินการซ่อม 👷</label>
+            <button type="button" onclick="addNewTechnician()" class="text-[11px] bg-teal-600 hover:bg-teal-700 text-white px-2 py-0.5 rounded font-medium transition flex items-center gap-1 shadow-sm">
+              <span>+</span> เพิ่มชื่อช่างซ่อม
+            </button>
+          </div>
+          
+          <input type="text" id="formAssignee" placeholder="คลิกเลือกชื่อด้านล่าง หรือพิมพ์ระบุเอง..." class="w-full border rounded-lg p-2 text-sm bg-white focus:outline-teal-600 font-medium text-slate-800">
+          
+          <!-- รายชื่อช่างซ่อมแบบคลิกเพื่อเลือกทันที -->
+          <div>
+            <p class="text-[11px] text-slate-500 mb-1">กดที่ชื่อเพื่อเลือกทันที:</p>
+            <div id="technicianBadges" class="flex flex-wrap gap-1.5">
+              <!-- เรนเดอร์ปุ่มช่างผ่าน JS -->
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label for="formStatus" class="block text-xs font-semibold text-slate-600 mb-1">สถานะงาน *</label>
+            <select id="formStatus" onchange="onStatusChange(this.value)" class="w-full border rounded-lg p-2 text-sm focus:outline-teal-600">
+              <option value="รอดำเนินการ">รอดำเนินการ</option>
+              <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
+              <option value="รออะไหล่/ช่างภายนอก">รออะไหล่/ช่างภายนอก</option>
+              <option value="เสร็จสิ้น">เสร็จสิ้น</option>
+              <option value="จำหน่ายออก">จำหน่ายออก (ซ่อมไม่คุ้ม)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">วันที่ซ่อมเสร็จ</label>
+            <input type="hidden" id="formCompletedDate">
+            <div class="flex gap-1">
+              <select id="formCompletedDate_d" aria-label="วันที่ซ่อมเสร็จ (วัน)" class="border rounded-lg p-2 text-sm focus:outline-teal-600 w-14" title="วัน"><option value="">วัน</option></select>
+              <select id="formCompletedDate_m" aria-label="วันที่ซ่อมเสร็จ (เดือน)" class="border rounded-lg p-2 text-sm focus:outline-teal-600 flex-1" title="เดือน"><option value="">เดือน</option></select>
+              <select id="formCompletedDate_y" aria-label="วันที่ซ่อมเสร็จ (ปี พ.ศ.)" class="border rounded-lg p-2 text-sm focus:outline-teal-600 w-24" title="ปี พ.ศ."><option value="">ปี พ.ศ.</option></select>
+            </div>
+          </div>
+        <!-- ส่วนแยกค่าใช้จ่าย: ค่าอะไหล่ vs ค่าจ้างเหมา/บริการ -->
+        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-700 flex items-center gap-1">
+              <span>💰</span> รายละเอียดค่าใช้จ่ายในการซ่อม (Cost Breakdown)
+            </span>
+            <span class="text-[11px] text-teal-700 font-bold">รวม: <span id="formCostTotalDisplay">0.00</span> ฿</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div>
+              <label for="formPartCost" class="block text-[11px] font-semibold text-slate-600 mb-0.5">⚙️ ค่าอะไหล่/อุปกรณ์ (บาท)</label>
+              <input type="number" id="formPartCost" min="0" step="0.01" value="0" oninput="calculateTotalRepairCost()" class="w-full border rounded-lg p-2 text-xs bg-white focus:outline-teal-600 font-medium text-slate-800">
+            </div>
+            <div>
+              <label for="formLaborCost" class="block text-[11px] font-semibold text-slate-600 mb-0.5">🛠️ ค่าจ้างเหมา/ค่าบริการ (บาท)</label>
+              <input type="number" id="formLaborCost" min="0" step="0.01" value="0" oninput="calculateTotalRepairCost()" class="w-full border rounded-lg p-2 text-xs bg-white focus:outline-teal-600 font-medium text-slate-800">
+            </div>
+            <div>
+              <label for="formCost" class="block text-[11px] font-bold text-teal-800 mb-0.5">รวมค่าใช้จ่ายทั้งหมด (บาท) *</label>
+              <input type="number" id="formCost" min="0" step="0.01" value="0" class="w-full border-2 border-teal-500 rounded-lg p-2 text-xs bg-teal-50/60 font-bold text-teal-900 focus:outline-teal-600">
+            </div>
+          </div>
+          <div>
+            <label for="formPartDetails" class="block text-[11px] font-semibold text-slate-600 mb-0.5">รายละเอียดอะไหล่ที่เปลี่ยน / บริษัทผู้รับจ้าง</label>
+            <input type="text" id="formPartDetails" placeholder="เช่น เปลี่ยนแบตเตอรี่แห้ง 12V 1 ลูก, จ้างบริษัท เมดิคอล ซ่อมแผงวงจร..." class="w-full border rounded-lg p-2 text-xs bg-white focus:outline-teal-600">
+          </div>
+        </div>
+        </div>
+
+        <div>
+          <label for="formStep" class="block text-xs font-semibold text-slate-600 mb-1">ขั้นตอนงานล่าสุด</label>
+          <input type="text" id="formStep" placeholder="เช่น สั่งอะไหล่จากบริษัท, ซ่อมเสร็จรอส่งมอบ" class="w-full border rounded-lg p-2 text-sm focus:outline-teal-600">
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-lg text-sm text-slate-600 hover:bg-slate-100 transition">ยกเลิก</button>
+          <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium transition">บันทึกข้อมูล</button>
+        </div>
+      </form>
+    </div>
+  </div>

@@ -1,0 +1,117 @@
+  <!-- ========================================================================= -->
+  <!-- MODAL: รายงานสรุปผู้บริหาร One-Page KPI & รายงานแทงจำหน่าย (Executive One-Page) -->
+  <!-- ========================================================================= -->
+  <div id="executiveOnePageModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 z-[9999] hidden no-print overflow-hidden">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-5xl w-full flex flex-col h-[95vh] max-h-[95vh] overflow-hidden animate-fade-in">
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white px-5 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between shrink-0 border-b border-slate-700">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-indigo-500/20 rounded-xl text-2xl border border-indigo-400/30">🎯</div>
+          <div>
+            <h3 class="font-bold text-sm sm:text-base leading-tight flex items-center gap-2">
+              <span>รายงานผู้บริหาร One-Page Executive Summary</span>
+              <span class="text-[10px] bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 px-2 py-0.5 rounded-full font-normal">KPI & จุดคุ้มทุน</span>
+            </h3>
+            <p class="text-xs text-slate-300">สรุปดัชนีชี้วัดหลัก (KPIs), วิเคราะห์จุดคุ้มทุนในการซ่อม และบัญชีเฝ้าระวังแทงจำหน่าย</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 shadow transition">
+            <span>🖨️</span> พิมพ์รายงาน
+          </button>
+          <button type="button" onclick="closeExecutiveOnePageModal()" class="text-white/70 hover:text-white text-2xl font-bold leading-none p-1">✕</button>
+        </div>
+      </div>
+
+      <!-- Modal Content (Scrollable) -->
+      <div class="p-4 sm:p-6 space-y-5 overflow-y-auto bg-slate-50 flex-1" id="executiveOnePageContent">
+        <!-- 1. Executive Summary Cards (One-Page Overview) -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-teal-600">
+            <div class="text-xs text-slate-500 font-medium">ความสำเร็จในการซ่อม (Fix Rate)</div>
+            <div class="text-2xl font-extrabold text-teal-800 mt-1" id="onepageKpiSuccessRate">0%</div>
+            <div class="text-[11px] text-slate-400 mt-0.5" id="onepageKpiSuccessSub">เสร็จ 0 จาก 0 รายการ</div>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-cyan-600">
+            <div class="text-xs text-slate-500 font-medium">เวลาซ่อมเฉลี่ย (MTTR)</div>
+            <div class="text-2xl font-extrabold text-cyan-800 mt-1" id="onepageKpiAvgTime">0 วัน</div>
+            <div class="text-[11px] text-slate-400 mt-0.5" id="onepageKpiAvgTimeSub">เป้าหมาย &le; 3 วัน</div>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-emerald-600">
+            <div class="text-xs text-slate-500 font-medium">งบซ่อมสะสมทั้งระบบ</div>
+            <div class="text-2xl font-extrabold text-emerald-800 mt-1" id="onepageKpiTotalCost">0 ฿</div>
+            <div class="text-[11px] text-slate-400 mt-0.5" id="onepageKpiAvgCostPerRepair">เฉลี่ย 0 ฿/งาน</div>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-rose-600">
+            <div class="text-xs text-slate-500 font-medium">ควรพิจารณาแทงจำหน่าย</div>
+            <div class="text-2xl font-extrabold text-rose-700 mt-1" id="onepageKpiDisposalCount">0 ชิ้น</div>
+            <div class="text-[11px] text-rose-600 font-bold mt-0.5" id="onepageKpiDisposalSub">ซ่อมเกินจุดคุ้มทุน</div>
+          </div>
+        </div>
+
+        <!-- 2. Cost-Benefit & Disposal Watchlist Table -->
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div>
+              <h4 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                <span>⚠️</span> รายงานวิเคราะห์จุดคุ้มทุน & รายการเสนอแทงจำหน่าย (Cost-Benefit & Disposal Criteria)
+              </h4>
+              <p class="text-xs text-slate-500">เกณฑ์คัดกรอง: ค่าซ่อมสะสมเกิน 50% ของราคากลาง หรือ ซ่อมบ่อยผิดปกติตั้งแต่ 3 ครั้งขึ้นไป</p>
+            </div>
+            <span class="text-xs bg-rose-50 text-rose-800 border border-rose-200 px-2.5 py-1 rounded-full font-bold" id="disposalCriteriaBadge">
+              เกณฑ์ รพ. มาตรฐานกระทรวงสาธารณสุข
+            </span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-100 text-slate-700 uppercase font-semibold">
+                <tr>
+                  <th class="py-2.5 px-3">ชื่อครุภัณฑ์ / เครื่องมือ</th>
+                  <th class="py-2.5 px-3">รหัสพัสดุ</th>
+                  <th class="py-2.5 px-3">แผนกผู้ครอง</th>
+                  <th class="py-2.5 px-3 text-center">ซ่อมแล้ว (ครั้ง)</th>
+                  <th class="py-2.5 px-3 text-right">ค่าซ่อมสะสม</th>
+                  <th class="py-2.5 px-3 text-right">ราคาจัดซื้อ (ประเมิน)</th>
+                  <th class="py-2.5 px-3 text-center">สัดส่วนค่าซ่อม</th>
+                  <th class="py-2.5 px-3 text-center">ข้อเสนอแนะเชิงยุทธศาสตร์</th>
+                </tr>
+              </thead>
+              <tbody id="disposalReportTableBody" class="divide-y divide-slate-100">
+                <!-- Rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 3. Key Observations & Action Plan -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <h4 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-1.5 mb-2">
+              <span>💡</span> ข้อสังเกตด้านการบริหารงบประมาณ (Financial Insights)
+            </h4>
+            <ul class="text-xs text-slate-600 space-y-1.5 list-disc list-inside leading-relaxed" id="onepageFinancialInsights">
+              <li>ระบบตรวจพบแผนกที่ใช้งบซ่อมแซมสูงสุดและประเภทอุปกรณ์ที่ชำรุดซ้ำซาก</li>
+              <li>การแทงจำหน่ายอุปกรณ์ที่ซ่อมไม่คุ้มทุนจะช่วยประหยัดงบซ่อมบำรุงรายปีลงได้อย่างมีนัยสำคัญ</li>
+            </ul>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <h4 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-1.5 mb-2">
+              <span>📋</span> แผนเสนอจัดซื้อทดแทนรอบปีงบประมาณถัดไป
+            </h4>
+            <div class="text-xs text-slate-600 leading-relaxed" id="onepageProcurementAdvice">
+              เสนอให้ฝ่ายบริหารและพัสดุนำรายการครุภัณฑ์ที่มีสัดส่วนค่าซ่อมเกิน 50% หรือเกิน 70% เข้าสู่แผนความต้องการจัดซื้อทดแทน (Replacement Plan) แทนการอนุมัติซ่อมซ้ำ
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="bg-slate-100 px-6 py-3 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500">
+        <div>ข้อมูล ณ วันที่: <span id="onepageGeneratedDate" class="font-medium text-slate-700">-</span></div>
+        <button type="button" onclick="closeExecutiveOnePageModal()" class="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl font-semibold transition">
+          ปิดหน้าต่าง
+        </button>
+      </div>
+    </div>
+  </div>

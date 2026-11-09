@@ -1,0 +1,127 @@
+  <!-- ========================================================================= -->
+  <!-- MODAL: การ์ดข้อมูลสรุปครุภัณฑ์ (Digital Equipment Profile & Passport Card)   -->
+  <!-- ========================================================================= -->
+  <div id="equipmentPassportModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 z-[9999] hidden no-print overflow-hidden">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full flex flex-col h-[95vh] max-h-[92vh] overflow-hidden animate-fade-in border border-slate-200">
+      
+      <!-- Card Header -->
+      <div class="bg-gradient-to-r from-teal-700 via-teal-800 to-slate-900 text-white px-5 sm:px-6 py-4 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-2xl shadow-inner">
+            🩺
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="passportNoidBadge" class="bg-teal-950/80 text-teal-200 border border-teal-500/40 font-mono text-xs font-bold px-2.5 py-0.5 rounded-full">-</span>
+              <span id="passportHealthBadge" class="bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[11px] font-semibold px-2 py-0.5 rounded-full">🟢 สภาพพร้อมใช้</span>
+            </div>
+            <h3 id="passportEquipName" class="font-bold text-base sm:text-lg leading-tight mt-1 text-white">ชื่อครุภัณฑ์</h3>
+          </div>
+        </div>
+        <button type="button" onclick="closeEquipmentPassportModal()" class="text-white/70 hover:text-white text-2xl font-bold leading-none p-1">✕</button>
+      </div>
+
+      <!-- Card Body (Scrollable) -->
+      <div class="p-4 sm:p-6 space-y-4 overflow-y-auto bg-slate-50 flex-1">
+        
+        <!-- 4 Key Dimensions Status Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <!-- Card 1: อายุการใช้งาน -->
+          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs border-t-4 border-t-cyan-500">
+            <div class="text-[11px] text-slate-500 font-medium">⏳ อายุการใช้งาน</div>
+            <div class="text-base sm:text-lg font-extrabold text-cyan-900 mt-0.5" id="passportAgeYears">-</div>
+            <div class="text-[10px] text-slate-400 truncate" id="passportReceivedDate">รับเข้า: -</div>
+          </div>
+
+          <!-- Card 2: สถานะค่าเสื่อมราคา -->
+          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs border-t-4 border-t-emerald-500">
+            <div class="text-[11px] text-slate-500 font-medium">💰 สถานะค่าเสื่อม</div>
+            <div class="text-base sm:text-lg font-extrabold text-emerald-900 mt-0.5" id="passportDeprStatus">-</div>
+            <div class="text-[10px] text-slate-400 truncate" id="passportNetBookValue">มูลค่าคงเหลือ: -</div>
+          </div>
+
+          <!-- Card 3: ประวัติงานซ่อม -->
+          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs border-t-4 border-t-indigo-500">
+            <div class="text-[11px] text-slate-500 font-medium">🔧 ประวัติการซ่อม</div>
+            <div class="text-base sm:text-lg font-extrabold text-indigo-900 mt-0.5" id="passportRepairCount">0 ครั้ง</div>
+            <div class="text-[10px] text-slate-400 truncate" id="passportTotalRepairCost">ค่าซ่อมสะสม: 0 ฿</div>
+          </div>
+
+          <!-- Card 4: การประเมินความคุ้มค่า -->
+          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs border-t-4 border-t-amber-500">
+            <div class="text-[11px] text-slate-500 font-medium">📊 จุดคุ้มทุน / ข้อเสนอ</div>
+            <div class="text-sm sm:text-base font-extrabold mt-0.5" id="passportCostBenefitEval">-</div>
+            <div class="text-[10px] text-slate-400 truncate" id="passportCostRatioSub">สัดส่วนค่าซ่อม: 0%</div>
+          </div>
+        </div>
+
+        <!-- Specifications & Property Details -->
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+          <h4 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-1.5 border-b border-slate-100 pb-2">
+            <span>📋</span> ข้อมูลจำเพาะและสถานที่ครอบครอง
+          </h4>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+            <div>
+              <span class="text-slate-400 block text-[11px]">กลุ่มงาน / แผนก:</span>
+              <span class="font-semibold text-slate-800" id="passportDiv">-</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[11px]">ประเภทครุภัณฑ์:</span>
+              <span class="font-semibold text-slate-800" id="passportType">-</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[11px]">สถานที่ติดตั้ง / เก็บ:</span>
+              <span class="font-semibold text-slate-800" id="passportLocation">-</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[11px]">ราคาต่อหน่วย (จัดซื้อ):</span>
+              <span class="font-bold text-emerald-700" id="passportPerUnit">-</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[11px]">ประเภทเงินงบประมาณ:</span>
+              <span class="font-semibold text-slate-800" id="passportMoneyType">-</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[11px]">ระดับความเสี่ยง (Risk):</span>
+              <span class="font-semibold text-slate-800" id="passportRisk">-</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Repair History Timeline (เชื่อมโยงระบบซ่อมจริง) -->
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h4 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-1.5">
+              <span>🛠️</span> ไทม์ไลน์ประวัติการซ่อมบำรุงจริง (Repair History)
+            </h4>
+            <span class="text-[11px] font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full" id="passportHistoryCountBadge">
+              พบ 0 รายการ
+            </span>
+          </div>
+          <div id="passportRepairTimeline" class="space-y-2.5">
+            <!-- Timeline elements rendered by JS -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Card Action Footer -->
+      <div class="bg-white px-5 py-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 shrink-0">
+        <div class="flex items-center gap-2">
+          <button type="button" id="passportCreateRepairBtn" class="bg-teal-600 hover:bg-teal-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition active:scale-95">
+            <span>🔧</span> เปิดใบส่งซ่อม
+          </button>
+          <button type="button" id="passportPrintQrBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition active:scale-95" title="พิมพ์สติกเกอร์ QR Code สำหรับติดประจำตัวเครื่อง">
+            <span>🖨️</span> พิมพ์สติกเกอร์ QR
+          </button>
+          <button type="button" id="passportEditBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition active:scale-95">
+            <span>✏️</span> แก้ไขข้อมูล
+          </button>
+        </div>
+        <button type="button" onclick="closeEquipmentPassportModal()" class="px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-100 rounded-xl text-xs font-semibold transition">
+          ปิด
+        </button>
+      </div>
+
+    </div>
+  </div>

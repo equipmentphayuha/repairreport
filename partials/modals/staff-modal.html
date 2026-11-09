@@ -1,0 +1,35 @@
+  <!-- ================= Modal: แบบฟอร์มเพิ่ม/แก้ไขเจ้าหน้าที่ ================= -->
+  <div id="staffModal" class="fixed inset-0 bg-slate-900 bg-opacity-50 hidden z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden flex flex-col max-h-[92vh] modal-enter">
+      <div class="bg-teal-700 px-6 py-4 text-white flex justify-between items-center shrink-0">
+        <h3 id="staffModalTitle" class="font-bold text-base">เพิ่มเจ้าหน้าที่ใหม่</h3>
+        <button type="button" onclick="closeStaffModal()" class="text-teal-200 hover:text-white text-xl font-bold">&times;</button>
+      </div>
+      <form id="staffForm" onsubmit="saveStaffMember(event)" class="p-6 space-y-4 overflow-y-auto">
+        <input type="hidden" id="staffEditId">
+
+        <div>
+          <label for="staffFormName" class="block text-xs font-semibold text-slate-600 mb-1">ชื่อ - นามสกุล *</label>
+          <input type="text" id="staffFormName" required placeholder="เช่น นายสมชาย ใจดี" class="w-full border rounded-lg p-2.5 text-sm focus:outline-teal-600 font-medium text-slate-800">
+        </div>
+
+        <div>
+          <label for="staffFormRole" class="block text-xs font-semibold text-slate-600 mb-1">บทบาท / หน้าที่ *</label>
+          <select id="staffFormRole" required class="w-full border rounded-lg p-2.5 text-sm bg-slate-50 focus:outline-teal-600">
+            <option value="technician">🔧 ช่างซ่อม / ผู้ดำเนินการซ่อม</option>
+            <option value="requester">📋 ผู้ส่งซ่อม / ผู้แจ้งซ่อม</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="staffFormDept" class="block text-xs font-semibold text-slate-600 mb-1">กลุ่มงาน / แผนก *</label>
+          <input type="text" id="staffFormDept" list="divDatalist" required placeholder="เช่น แผนกอุบัติเหตุฉุกเฉิน (ER), กลุ่มงานดิจิทัล" class="w-full border rounded-lg p-2.5 text-sm focus:outline-teal-600">
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t">
+          <button type="button" onclick="closeStaffModal()" class="px-4 py-2 border rounded-lg text-sm text-slate-600 hover:bg-slate-100 transition">ยกเลิก</button>
+          <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium transition">บันทึก</button>
+        </div>
+      </form>
+    </div>
+  </div>

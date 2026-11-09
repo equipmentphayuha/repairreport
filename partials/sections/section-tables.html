@@ -1,0 +1,167 @@
+    <!-- ================= แท็บ 2: สรุปรายละเอียด ================= -->
+    <section id="section-tables" class="space-y-6 hidden">
+      <!-- Export Bar for Tables -->
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4 mb-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-700">แดชบอร์ดและรายละเอียดแยกตามแผนก / ครุภัณฑ์</h2>
+          <p class="text-xs text-slate-500">วิเคราะห์เปรียบเทียบภาระการซ่อมแซมและค่าใช้จ่ายตามหน่วยงานและรายการอุปกรณ์</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-1.5 mr-2">
+            <label for="tableFiscalYearFilter" class="text-xs font-semibold text-slate-600 whitespace-nowrap">📅 ปีงบประมาณ:</label>
+            <select id="tableFiscalYearFilter" onchange="onTableFiscalYearChange()" class="border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-slate-50 font-bold text-teal-800 focus:outline-teal-600">
+              <option value="current" selected>ปีงบประมาณปัจจุบัน</option>
+              <option value="all">ทุกปีงบประมาณ</option>
+            </select>
+          </div>
+          <button onclick="exportDashboardToPPT()" class="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white px-3.5 py-1.5 rounded-lg text-sm font-semibold shadow flex items-center gap-1.5 transition" title="ส่งออกสไลด์ PowerPoint สำหรับผู้บริหาร">
+            <span>📽️</span> สไลด์ PPTX
+          </button>
+          <button onclick="openExecutiveReportModal()" class="bg-slate-700 hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-lg text-sm font-semibold shadow flex items-center gap-1.5 transition no-print" title="ดูตัวอย่างและพิมพ์รายงานสรุป PDF สำหรับผู้บริหาร">
+            <span>📑</span> รายงาน PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Mini Cards for Section Tables -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-teal-500">
+          <p class="text-xs text-slate-500 font-medium">แผนกที่มีประวัติส่งซ่อม</p>
+          <p id="table-kpi-dept-count" class="text-xl font-bold text-slate-800 mt-1">0 แผนก</p>
+          <p class="text-[11px] text-teal-600 mt-0.5" id="table-kpi-dept-sub">จากประวัติการส่งซ่อม</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-purple-500">
+          <p class="text-xs text-slate-500 font-medium">ชนิดครุภัณฑ์ที่ส่งซ่อม</p>
+          <p id="table-kpi-equip-count" class="text-xl font-bold text-slate-800 mt-1">0 ชนิด</p>
+          <p class="text-[11px] text-purple-600 mt-0.5" id="table-kpi-equip-sub">รวมส่งซ่อม 0 ครั้ง</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-amber-500">
+          <p class="text-xs text-slate-500 font-medium">แผนกที่ส่งซ่อมสูงสุด</p>
+          <p id="table-kpi-top-dept" class="text-base font-bold text-slate-800 mt-1 truncate">-</p>
+          <p class="text-[11px] text-amber-600 mt-0.5 truncate" id="table-kpi-top-dept-sub">0 ครั้ง</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-rose-500">
+          <p class="text-xs text-slate-500 font-medium">ครุภัณฑ์ที่ใช้งบสูงสุด</p>
+          <p id="table-kpi-top-equip" class="text-base font-bold text-slate-800 mt-1 truncate">-</p>
+          <p class="text-[11px] text-rose-600 mt-0.5 truncate" id="table-kpi-top-equip-sub">0 บาท</p>
+        </div>
+      </div>
+
+      <!-- Charts for Section Tables -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+          <div class="flex items-center justify-between mb-3 border-b pb-2">
+            <div>
+              <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                <span>🏢</span> สัดส่วนค่าใช้จ่ายซ่อมแซมตามกลุ่มงาน/แผนก (Top 7)
+              </h3>
+              <p class="text-xs text-slate-500">งบประมาณการซ่อมแซมสะสมในแต่ละแผนก</p>
+            </div>
+          </div>
+          <div class="relative h-64 w-full">
+            <canvas id="tableDeptCostChart"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+          <div class="flex items-center justify-between mb-3 border-b pb-2">
+            <div>
+              <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                <span>🩺</span> ครุภัณฑ์ที่ส่งซ่อมบ่อยที่สุด (Top 8 รายการ)
+              </h3>
+              <p class="text-xs text-slate-500">จัดอันดับตามจำนวนครั้งที่มีการเปิดใบส่งซ่อม</p>
+            </div>
+          </div>
+          <div class="relative h-64 w-full">
+            <canvas id="tableEquipCountChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Breakdown Tables -->
+      <div class="grid grid-cols-1 gap-8">
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+          <div>
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3 border-b pb-2">
+              <div>
+                <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                  <span>🏢</span> สรุปแยกตามกลุ่มงาน / แผนก
+                </h3>
+                <p class="text-xs text-slate-500">เรียงตามแผนกที่ส่งซ่อมบ่อยที่สุด</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <input type="text" id="deptSearchInput" aria-label="ค้นหากลุ่มงานหรือแผนก" oninput="renderDashboardTables()" placeholder="ค้นแผนก..." class="border border-slate-200 rounded px-2 py-1 text-xs w-28 focus:outline-teal-600">
+                <span class="text-xs font-semibold px-2 py-0.5 bg-teal-100 text-teal-800 rounded-full" id="dept-summary-count">0 แผนก</span>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto max-h-80 overflow-y-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-100 text-slate-600 uppercase sticky top-0">
+                  <tr>
+                    <th class="py-2.5 px-3">อันดับ</th>
+                    <th class="py-2.5 px-3">กลุ่มงาน / แผนก</th>
+                    <th class="py-2.5 px-3 text-center">จำนวนครั้ง</th>
+                    <th class="py-2.5 px-3 text-right">ค่าใช้จ่ายรวม</th>
+                    <th class="py-2.5 px-3 text-right">สัดส่วน</th>
+                  </tr>
+                </thead>
+                <tbody id="deptSummaryTableBody" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+          <div>
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3 border-b pb-2">
+              <div>
+                <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                  <span>🩺</span> สรุปแยกตามชนิดครุภัณฑ์ / เครื่องมือ
+                </h3>
+                <p class="text-xs text-slate-500">ความถี่ในการซ่อม แผนกที่ใช้ และงบประมาณ (จัดกลุ่มตามชนิดอุปกรณ์)</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <input type="text" id="equipSearchInput" aria-label="ค้นหาชนิดครุภัณฑ์หรือเครื่องมือ" oninput="resetEquipPageAndRender()" placeholder="ค้นชื่อครุภัณฑ์..." class="border border-slate-200 rounded px-2 py-1 text-xs w-32 focus:outline-purple-600">
+                <span class="text-xs font-semibold px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full" id="equip-summary-count">0 ชนิด</span>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto min-h-[18rem] max-h-80 overflow-y-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-100 text-slate-600 uppercase sticky top-0">
+                  <tr>
+                    <th class="py-2.5 px-3">ชื่อครุภัณฑ์</th>
+                    <th class="py-2.5 px-3">แผนกที่พบ</th>
+                    <th class="py-2.5 px-3 text-center">จำนวนซ่อม</th>
+                    <th class="py-2.5 px-3 text-right">งบประมาณรวม</th>
+                    <th class="py-2.5 px-3 text-right">เฉลี่ย/ครั้ง</th>
+                  </tr>
+                </thead>
+                <tbody id="equipSummaryTableBody" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-3 border-t mt-2 text-xs text-slate-500">
+            <div class="flex items-center gap-1">
+              <label for="equipPageSize">แสดง:</label>
+              <select id="equipPageSize" onchange="resetEquipPageAndRender()" class="border border-slate-200 rounded px-1.5 py-0.5 bg-slate-50">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+              </select>
+              <span>รายการ/หน้า</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <span id="equipPaginationInfo" class="mr-2">1-10 จาก 100</span>
+              <button onclick="changeEquipPage(-1)" id="btnEquipPrev" class="px-2 py-1 border rounded bg-slate-50 hover:bg-slate-100 disabled:opacity-40">◀ ก่อนหน้า</button>
+              <button onclick="changeEquipPage(1)" id="btnEquipNext" class="px-2 py-1 border rounded bg-slate-50 hover:bg-slate-100 disabled:opacity-40">ถัดไป ▶</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+

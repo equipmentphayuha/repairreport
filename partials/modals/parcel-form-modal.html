@@ -1,0 +1,64 @@
+    <!-- Modal for Parcel Data Entry & Editing -->
+    <div id="parcelFormModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-2 sm:p-4 z-50 no-print">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <!-- Modal Header -->
+            <div class="p-4 bg-gradient-to-r from-slate-800 via-teal-900 to-slate-900 text-white flex justify-between items-center shadow-sm">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-xl">📝</span>
+                    <div>
+                        <h3 id="parcelModalTitle" class="text-base font-bold tracking-tight text-white">บันทึกข้อมูลครุภัณฑ์</h3>
+                        <p class="text-[11px] text-teal-200/80">กรอกรายละเอียดครุภัณฑ์เพื่อบันทึกหรืออัปเดตข้อมูล</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeParcelFormModal()"
+                    class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-lg font-bold transition" title="ปิดหน้าต่าง">
+                    &times;
+                </button>
+            </div>
+
+            <!-- Modal Body (Form Fields) -->
+            <div class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
+                <form id="equipmentForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    <!-- Render Dynamic Fields Here -->
+                </form>
+            </div>
+
+            <!-- Modal Footer (Action Buttons) -->
+            <div class="p-3.5 sm:p-4 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row gap-2 justify-between items-center" id="formBtns">
+                <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                    <button type="button" id="deleteCurrentEditBtn"
+                        class="w-full sm:w-auto bg-rose-50 border border-rose-300 text-rose-700 px-3.5 py-2 rounded-xl shadow-sm hover:bg-rose-100 text-xs sm:text-sm font-semibold hidden items-center justify-center gap-1 transition">
+                        🗑️ ลบรายการนี้
+                    </button>
+                    <button type="button" id="duplicateCurrentBtn"
+                        class="w-full sm:w-auto bg-indigo-50 border border-indigo-300 text-indigo-700 px-3.5 py-2 rounded-xl shadow-sm hover:bg-indigo-100 text-xs sm:text-sm font-semibold hidden items-center justify-center gap-1 transition" title="คัดลอกข้อมูลในฟอร์มนี้เพื่อสร้างเป็นชิ้นใหม่">
+                        📋 ทำซ้ำ (สร้างใหม่)
+                    </button>
+                    <button type="button" id="spreadCurrentBtn"
+                        class="w-full sm:w-auto bg-amber-50 border border-amber-300 text-amber-800 px-3.5 py-2 rounded-xl shadow-sm hover:bg-amber-100 text-xs sm:text-sm font-semibold hidden items-center justify-center gap-1 transition" title="กระจายข้อมูลแยก Noid ที่เป็นช่วงออกเป็นหลายชิ้น">
+                        🔄 กระจายข้อมูล
+                    </button>
+                </div>
+                <div class="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
+                    <button type="button" id="repairCurrentBtn"
+                        class="w-full sm:w-auto bg-teal-600 text-white px-3.5 py-2 rounded-xl shadow hover:bg-teal-700 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition" title="เปิดใบส่งซ่อมโดยใช้ข้อมูลที่กรอกในฟอร์มนี้">
+                        🔧 <span>ส่งซ่อมเครื่องนี้</span>
+                    </button>
+                    <button type="button" id="resetBtn"
+                        class="w-full sm:w-auto bg-slate-200 hover:bg-slate-300 text-slate-700 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition">
+                        ล้างฟอร์ม
+                    </button>
+                    <button type="button" id="cancelEditBtn" onclick="closeParcelFormModal()"
+                        class="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-600 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition">
+                        ยกเลิก
+                    </button>
+                    <button type="submit" form="equipmentForm" id="submitBtn"
+                        class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl shadow-md text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition transform hover:-translate-y-0.5">
+                        💾 <span>บันทึกข้อมูล (Save)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Dynamic Field Configuration -->

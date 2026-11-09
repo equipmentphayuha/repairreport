@@ -1,0 +1,98 @@
+    <div id="configModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-2 sm:p-4 z-50">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col">
+            <div class="p-3 sm:p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-lg">
+                <h3 class="text-base sm:text-lg font-bold text-gray-800">ตั้งค่าชื่อฟิลด์ เพิ่มช่อง และคำอธิบาย</h3>
+                <button id="closeConfigModalBtn"
+                    class="text-gray-500 hover:text-red-500 text-2xl font-bold p-1">&times;</button>
+            </div>
+
+            <div class="p-4 overflow-y-auto flex-1 space-y-4">
+                <!-- Section 0: QR Code Web Address (Base URL Settings) -->
+                <div class="bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200 p-4 rounded-xl shadow-xs space-y-2">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">🌐</span>
+                        <div>
+                            <h4 class="font-bold text-teal-900 text-sm">ที่อยู่เว็บไซต์หลักสำหรับสแกน QR Code (Web Base URL)</h4>
+                            <p class="text-xs text-teal-700">ระบุลิงก์ที่อยู่เว็บสำหรับสร้างลงบน QR Code เมื่อนำมือถือทั่วไปหรือแอป LINE มาสแกน จะเปิดเข้ามายังลิงก์นี้ทันที</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1">
+                        <div class="sm:col-span-9">
+                            <input type="url" id="configWebBaseUrl" placeholder="เช่น https://repirereport.web.app หรือ https://hospital.moph.go.th/repair"
+                                class="w-full border border-teal-300 p-2 rounded-lg text-xs sm:text-sm bg-white font-mono focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                        </div>
+                        <div class="sm:col-span-3 flex gap-1.5">
+                            <button type="button" onclick="window.useCurrentHostAsBaseUrl()"
+                                class="w-full bg-teal-100 hover:bg-teal-200 text-teal-800 border border-teal-300 p-2 rounded-lg text-xs font-semibold transition" title="ดึงที่อยู่เว็บปัจจุบันที่กำลังเปิดอยู่มาใส่ในช่อง">
+                                📍 ใช้ URL ปัจจุบัน
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-500 italic">* หากยังไม่ได้อัปขึ้นโฮสต์จริง สามารถปล่อยว่างหรือกด "ใช้ URL ปัจจุบัน" ไว้ก่อนได้ เมื่อย้ายเว็บขึ้นโฮสต์จริง ค่อยมาแก้ไขช่องนี้ได้ตลอดเวลา</p>
+                </div>
+
+                <!-- Section 1: Add New Field -->
+                <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                    <h4 class="font-bold text-blue-800 mb-2 text-sm">➕ เพิ่มช่องกรอกข้อมูลใหม่ (Add New Field)</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-2">
+                        <div class="md:col-span-3">
+                            <label for="newFieldKey" class="block text-xs font-semibold text-gray-600">รหัสฟิลด์ภาษาอังกฤษ (Key)*</label>
+                            <input type="text" id="newFieldKey" placeholder="เช่น weight, warranty"
+                                class="w-full border p-1.5 rounded text-sm bg-white">
+                        </div>
+                        <div class="md:col-span-3">
+                            <label for="newFieldLabel" class="block text-xs font-semibold text-gray-600">ชื่อฟิลด์ที่แสดง (Label)*</label>
+                            <input type="text" id="newFieldLabel" placeholder="เช่น น้ำหนัก, วันหมดประกัน"
+                                class="w-full border p-1.5 rounded text-sm bg-white">
+                        </div>
+                        <div class="md:col-span-3">
+                            <label for="newFieldType" class="block text-xs font-semibold text-gray-600">ประเภทข้อมูล (Type)</label>
+                            <select id="newFieldType" class="w-full border p-1.5 rounded text-sm bg-white">
+                                <option value="text">ข้อความ (Text)</option>
+                                <option value="number">ตัวเลข (Number)</option>
+                                <option value="thaidate">วันที่ พ.ศ. (Thai Date)</option>
+                                <option value="date">วันที่ ค.ศ. (Date)</option>
+                                <option value="combo">เลือกหรือพิมพ์เอง (Combo)</option>
+                                <option value="select">ตัวเลือกแบบล็อก (Select)</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-3 flex items-end">
+                            <button type="button" id="addNewFieldBtn"
+                                class="w-full bg-blue-600 text-white p-1.5 rounded text-sm hover:bg-blue-700 font-semibold">+
+                                เพิ่มช่องใหม่</button>
+                        </div>
+                    </div>
+                    <div id="selectOptionGroup" class="mt-2 hidden">
+                        <label for="newFieldOptions" class="block text-xs font-semibold text-gray-600">ตัวเลือกสำหรับ Select
+                            (คั่นด้วยเครื่องหมายจุลภาค ,)</label>
+                        <input type="text" id="newFieldOptions" placeholder="ตัวเลือก1, ตัวเลือก2, ตัวเลือก3"
+                            class="w-full border p-1.5 rounded text-sm bg-white">
+                    </div>
+                    <div class="mt-2">
+                        <label for="newFieldDesc" class="block text-xs font-semibold text-gray-600">คำอธิบายการกรอก (Description)</label>
+                        <input type="text" id="newFieldDesc" placeholder="อธิบายแนะนำการกรอกสำหรับผู้ใช้..."
+                            class="w-full border p-1.5 rounded text-sm bg-white">
+                    </div>
+                </div>
+
+                <!-- Section 2: Manage Existing Fields -->
+                <div>
+                    <h4 class="font-bold text-gray-700 mb-2 text-sm">รายการช่องกรอกข้อมูลทั้งหมดในปัจจุบัน</h4>
+                    <p class="text-xs text-gray-500 mb-2">* ท่านสามารถแก้ไขชื่อ แสดงผล คำอธิบาย
+                        หรือลบช่องที่ไม่ต้องการได้</p>
+                    <div class="space-y-3" id="configList">
+                        <!-- Dynamic Config Items -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t flex justify-between bg-gray-50 rounded-b-lg">
+                <button id="resetDefaultConfigBtn"
+                    class="bg-yellow-500 text-white px-4 py-2 rounded text-sm hover:bg-yellow-600">คืนค่าเริ่มต้น</button>
+                <button id="saveConfigBtn"
+                    class="bg-blue-600 text-white px-5 py-2 rounded text-sm hover:bg-blue-700">บันทึกการตั้งค่า</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Excel Modal -->

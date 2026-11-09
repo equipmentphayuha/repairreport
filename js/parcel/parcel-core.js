@@ -1314,7 +1314,7 @@ window.deleteItem = async (id) => {
     renderDataViews();
 };
 // Form submission (Local-First: Save locally instantly, mark for sync)
-document.getElementById('equipmentForm').addEventListener('submit', (e) => {
+document.getElementById('equipmentForm')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const noidInput = document.getElementById('noid');
     if (noidInput && noidInput.value.trim() !== '') {
@@ -1364,7 +1364,7 @@ document.getElementById('equipmentForm').addEventListener('submit', (e) => {
     }
 });
 // Delete All
-document.getElementById('deleteAllBtn').addEventListener('click', async () => {
+document.getElementById('deleteAllBtn')?.addEventListener('click', async () => {
     if (currentData.length === 0) return alert('ไม่มีรายการข้อมูลให้ลบ');
     const total = currentData.length;
     if (!confirm(`⚠️ คุณแน่ใจหรือไม่ว่าต้องการ "ลบข้อมูลทั้งหมด" (${total} รายการ)?\n\nการกระทำนี้ไม่สามารถย้อนกลับได้!`)) return;
@@ -1372,8 +1372,10 @@ document.getElementById('deleteAllBtn').addEventListener('click', async () => {
     setEditMode(false);
     if (isFirebaseConfigured) {
         const btn = document.getElementById('deleteAllBtn');
-        btn.disabled = true;
-        btn.textContent = 'กำลังลบทั้งหมด...';
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'กำลังลบทั้งหมด...';
+        }
         try {
             const chunks = [];
             for (let i = 0; i < currentData.length; i += 450) {
@@ -1393,20 +1395,23 @@ document.getElementById('deleteAllBtn').addEventListener('click', async () => {
             console.error(err);
             alert('เกิดข้อผิดพลาดในการลบข้อมูลทั้งหมด: ' + err.message);
         } finally {
-            btn.disabled = false;
-            btn.innerHTML = '🗑️ ลบทั้งหมด';
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '🗑️ ลบทั้งหมด';
+            }
         }
     } else {
         currentData = [];
         localStorage.setItem('hospital_equipments', JSON.stringify([]));
-        document.getElementById('totalItems').innerText = '0';
+        const totalItemsEl = document.getElementById('totalItems');
+        if (totalItemsEl) totalItemsEl.innerText = '0';
         renderDataViews();
         alert('ลบข้อมูลทั้งหมดเรียบร้อยแล้ว');
     }
 });
-document.getElementById('resetBtn').addEventListener('click', () => setEditMode(false));
-document.getElementById('cancelEditBtn').addEventListener('click', () => setEditMode(false));
-document.getElementById('deleteCurrentEditBtn').addEventListener('click', () => {
+document.getElementById('resetBtn')?.addEventListener('click', () => setEditMode(false));
+document.getElementById('cancelEditBtn')?.addEventListener('click', () => setEditMode(false));
+document.getElementById('deleteCurrentEditBtn')?.addEventListener('click', () => {
     if (editingId) window.deleteItem(editingId);
 });
 const duplicateCurrentBtn = document.getElementById('duplicateCurrentBtn');
@@ -1440,30 +1445,31 @@ window.useCurrentHostAsBaseUrl = function() {
     if (input) input.value = current;
 };
 
-document.getElementById('openConfigModalBtn').addEventListener('click', () => {
+document.getElementById('openConfigModalBtn')?.addEventListener('click', () => {
     tempFields = JSON.parse(JSON.stringify(activeFields));
     renderConfigList();
     const urlInput = document.getElementById('configWebBaseUrl');
     if (urlInput) {
         urlInput.value = localStorage.getItem('parcel_qr_base_url') || '';
     }
-    configModal.classList.remove('hidden');
+    configModal?.classList.remove('hidden');
 });
-document.getElementById('closeConfigModalBtn').addEventListener('click', () => configModal.classList.add('hidden'));
-document.getElementById('newFieldType').addEventListener('change', (e) => {
+document.getElementById('closeConfigModalBtn')?.addEventListener('click', () => configModal?.classList.add('hidden'));
+document.getElementById('newFieldType')?.addEventListener('change', (e) => {
     const group = document.getElementById('selectOptionGroup');
+    if (!group) return;
     if (e.target.value === 'select' || e.target.value === 'combo') {
         group.classList.remove('hidden');
     } else {
         group.classList.add('hidden');
     }
 });
-document.getElementById('addNewFieldBtn').addEventListener('click', () => {
-    const key = document.getElementById('newFieldKey').value.trim();
-    const label = document.getElementById('newFieldLabel').value.trim();
-    const type = document.getElementById('newFieldType').value;
-    const desc = document.getElementById('newFieldDesc').value.trim();
-    const rawOpts = document.getElementById('newFieldOptions').value.trim();
+document.getElementById('addNewFieldBtn')?.addEventListener('click', () => {
+    const key = document.getElementById('newFieldKey')?.value.trim();
+    const label = document.getElementById('newFieldLabel')?.value.trim();
+    const type = document.getElementById('newFieldType')?.value;
+    const desc = document.getElementById('newFieldDesc')?.value.trim();
+    const rawOpts = document.getElementById('newFieldOptions')?.value.trim();
     if (!key || !label) {
         return alert('กรุณากรอกรหัสฟิลด์ (Key) และชื่อฟิลด์ที่แสดง (Label)');
     }
@@ -1481,10 +1487,14 @@ document.getElementById('addNewFieldBtn').addEventListener('click', () => {
         newFieldObj.options = rawOpts ? rawOpts.split(',').map(s => s.trim()).filter(Boolean) : ['ตัวเลือก 1', 'ตัวเลือก 2'];
     }
     tempFields.push(newFieldObj);
-    document.getElementById('newFieldKey').value = '';
-    document.getElementById('newFieldLabel').value = '';
-    document.getElementById('newFieldDesc').value = '';
-    document.getElementById('newFieldOptions').value = '';
+    const keyEl = document.getElementById('newFieldKey');
+    const labelEl = document.getElementById('newFieldLabel');
+    const descEl = document.getElementById('newFieldDesc');
+    const optsEl = document.getElementById('newFieldOptions');
+    if (keyEl) keyEl.value = '';
+    if (labelEl) labelEl.value = '';
+    if (descEl) descEl.value = '';
+    if (optsEl) optsEl.value = '';
     renderConfigList();
 });
 function renderConfigList() {
@@ -1525,7 +1535,7 @@ window.removeTempField = (idx) => {
         renderConfigList();
     }
 };
-document.getElementById('saveConfigBtn').addEventListener('click', async () => {
+document.getElementById('saveConfigBtn')?.addEventListener('click', async () => {
     tempFields.forEach((f, idx) => {
         const lbl = document.getElementById(`cfg_label_${idx}`);
         const desc = document.getElementById(`cfg_desc_${idx}`);
@@ -1559,9 +1569,9 @@ document.getElementById('saveConfigBtn').addEventListener('click', async () => {
     } else {
         alert('บันทึกการปรับแต่งช่องกรอกข้อมูลเรียบร้อยแล้ว!');
     }
-    configModal.classList.add('hidden');
+    configModal?.classList.add('hidden');
 });
-document.getElementById('resetDefaultConfigBtn').addEventListener('click', async () => {
+document.getElementById('resetDefaultConfigBtn')?.addEventListener('click', async () => {
     if (confirm('คุณต้องการคืนค่าช่องกรอกข้อมูลทั้งหมดเป็นค่าเริ่มต้นใช่หรือไม่?')) {
         activeFields = JSON.parse(JSON.stringify(defaultFields));
         localStorage.removeItem('field_configurations');
